@@ -31,7 +31,7 @@ import (
 // Save recording of a stream to disk
 func Save(ctx context.Context, tracked *tracked) error {
 	if tracked.Status() == saving {
-		return errors.New("track.Saving: already saving")
+		log.Println("track.Save:", tracked.Target.Name(), "resumed")
 	}
 
 	url := tracked.StreamURL()
@@ -41,6 +41,7 @@ func Save(ctx context.Context, tracked *tracked) error {
 
 	tracked.SetStatus(saving)
 	tracked.SetStartedAt(time.Now())
+	tracked.SetFinishedAt(time.Time{})
 	tracked.Target.BeginSave()
 
 	cmd, err := RunDownloader(ctx, url, tracked.Target.Name())
@@ -58,13 +59,10 @@ func Save(ctx context.Context, tracked *tracked) error {
 			select {
 			case <-ctx.Done():
 				log.Println("track.Save:", tracked.Target.Name(), "canceled")
-				tracked.SetStatus(sleeping)
 				tracked.Target.EndSave(nil)
 				return
 			case <-exit:
 				log.Printf("track.Save: %s done [%s %d]", tracked.Target.Name(), cmd.Args[0], cmd.Process.Pid)
-				tracked.SetStatus(sleeping)
-				tracked.Target.EndSave(nil)
 				return
 			}
 		}

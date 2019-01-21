@@ -112,9 +112,13 @@ func snipe(ctx context.Context, tracked *tracked) error {
 								return
 							case <-to.C:
 								log.Println("track.snipe:", tracked.Target.Name(), "timeout")
-								if tracked.IsLive() {
+								if tracked.Status() == saving {
 									// so we were finished minutes ago
-									tracked.SetFinishedAt(time.Now().Add(-timeout))
+									at := time.Now().Add(-timeout)
+									tracked.SetFinishedAt(at)
+									tracked.SetStatus(sleeping)
+									log.Printf("track.snipe: %s finished at %s", tracked.Target.Name(), at)
+									tracked.Target.EndSave(nil)
 								}
 								return
 							case <-time.After(backoff.DefaultPolicy.Duration(n)):
