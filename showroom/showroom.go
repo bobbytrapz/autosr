@@ -162,16 +162,28 @@ func readTrackList() error {
 	}
 	defer f.Close()
 
+	var wg sync.WaitGroup
 	s := bufio.NewScanner(f)
 	for s.Scan() {
 		url := strings.TrimSpace(s.Text())
-		if url == "" {
+		if url == "" || url[0] == '#' {
 			continue
 		}
 
-		if err := AddTargetFromURL(url); err != nil {
-			fmt.Println("showroom:", err)
-		}
+		go func() {
+			wg.Add(1)
+			defer wg.Done()
+			if err := AddTargetFromURL(url); err != nil {
+				fmt.Println("showroom:", err)
+				return
+			}
+
+			fmt.Println("showroom: added", url)
+		}()
 	}
+
+	// wait until all url have been added
+	wg.Wait()
+
 	return nil
 }

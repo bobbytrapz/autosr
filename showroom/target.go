@@ -30,12 +30,12 @@ import (
 func AddTargetFromURL(link string) error {
 	_, err := url.Parse(link)
 	if err != nil {
-		return fmt.Errorf("showroom.AddTargetFromURL: %s", err)
+		return fmt.Errorf("showroom.AddTargetFromURL: '%s' %s", link, err)
 	}
 
 	s, err := fetchRoom(link)
 	if err != nil {
-		return fmt.Errorf("showroom.AddTargetFromURL: %s", err)
+		return fmt.Errorf("showroom.AddTargetFromURL: '%s' %s", link, err)
 	}
 
 	t := Target{
@@ -60,11 +60,8 @@ func AddTargetFromURL(link string) error {
 		log.Println("showroom.AddTargetFromURL:", t.name, "is live now!", streamURL)
 		// they are live now so snipe them now
 		track.SnipeTargetAt(t, time.Now())
-
 		return nil
 	}
-
-	log.Println("showroom.AddTargetFromURL:", t.name, err)
 
 	return nil
 }
