@@ -234,7 +234,7 @@ func ListTracking() []Info {
 		})
 	}
 
-	sort.Sort(ByUrgency(lst))
+	sort.Sort(byUrgency(lst))
 
 	return lst
 }
