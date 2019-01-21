@@ -33,8 +33,22 @@ var req = ipc.Dashboard{
 }
 var res ipc.Dashboard
 
+var shouldColorLogo = false
+
+// smbraille
+var logo = `
+ ⢀⣀ ⡀⢀ ⣰⡀ ⢀⡀ ⢀⣀ ⡀⣀
+ ⠣⠼ ⠣⠼ ⠘⠤ ⠣⠜ ⠭⠕ ⠏
+`
+
+var colorLogo = `
+ [0;1;35;95m⢀[0;1;31;91m⣀[0m [0;1;33;93m⡀⢀[0m [0;1;32;92m⣰[0;1;36;96m⡀[0m [0;1;34;94m⢀⡀[0m [0;1;35;95m⢀[0;1;31;91m⣀[0m [0;1;33;93m⡀⣀[0m
+ [0;1;31;91m⠣[0;1;33;93m⠼[0m [0;1;32;92m⠣⠼[0m [0;1;36;96m⠘[0;1;34;94m⠤[0m [0;1;35;95m⠣⠜[0m [0;1;31;91m⠭[0;1;33;93m⠕[0m [0;1;32;92m⠏[0m
+`
+
 // Run the dashboard
-func Run() {
+func Run(bColor bool) {
+	shouldColorLogo = bColor
 	// connect to server
 	var err error
 	remote, err = rpc.DialHTTP("tcp", "localhost:4846")
@@ -100,16 +114,6 @@ func redraw(g *gocui.Gui) {
 	})
 }
 
-var logo = `
- ⢀⣀ ⡀⢀ ⣰⡀ ⢀⡀ ⢀⣀ ⡀⣀
- ⠣⠼ ⠣⠼ ⠘⠤ ⠣⠜ ⠭⠕ ⠏
-`
-
-var rainbow = `
- [0;1;35;95m⢀[0;1;31;91m⣀[0m [0;1;33;93m⡀⢀[0m [0;1;32;92m⣰[0;1;36;96m⡀[0m [0;1;34;94m⢀⡀[0m [0;1;35;95m⢀[0;1;31;91m⣀[0m [0;1;33;93m⡀⣀[0m
- [0;1;31;91m⠣[0;1;33;93m⠼[0m [0;1;32;92m⠣⠼[0m [0;1;36;96m⠘[0;1;34;94m⠤[0m [0;1;35;95m⠣⠜[0m [0;1;31;91m⠭[0;1;33;93m⠕[0m [0;1;32;92m⠏[0m
-`
-
 func layout(g *gocui.Gui) error {
 
 	{
@@ -123,7 +127,11 @@ func layout(g *gocui.Gui) error {
 			v.Wrap = true
 			v.Autoscroll = true
 
-			fmt.Fprintln(v, logo)
+			if shouldColorLogo {
+				fmt.Fprintln(v, colorLogo)
+			} else {
+				fmt.Fprintln(v, logo)
+			}
 
 			tw := tabwriter.NewWriter(v, 0, 0, 8, ' ', 0)
 			if len(res.Tracking) > 0 {

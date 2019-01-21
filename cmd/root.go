@@ -94,7 +94,7 @@ Details can be found at https://github.com/bobbytrapz/autosr/LICENSE.
 	Run: func(cmd *cobra.Command, args []string) {
 		if !shouldRunInForeground && os.Getenv(backgroundEnvKey) == "" {
 			if isRunningInBackground() {
-				dashboard.Run()
+				dashboard.Run(shouldColorLogo)
 				return
 			}
 
@@ -108,7 +108,7 @@ Details can be found at https://github.com/bobbytrapz/autosr/LICENSE.
 			}
 
 			<-time.After(1 * time.Second)
-			dashboard.Run()
+			dashboard.Run(shouldColorLogo)
 			return
 		}
 		ctx, cancel := context.WithCancel(context.Background())
@@ -137,10 +137,12 @@ Details can be found at https://github.com/bobbytrapz/autosr/LICENSE.
 
 var shouldRunInForeground = false
 var shouldNotStartDashboard = false
+var shouldColorLogo = false
 
 func init() {
 	rootCmd.Flags().BoolVarP(&shouldRunInForeground, "foreground", "f", false, "Run autosr in the foreground")
 	rootCmd.Flags().BoolVarP(&shouldNotStartDashboard, "no-dashboard", "d", false, "Do not start the dashboard")
+	rootCmd.Flags().BoolVar(&shouldColorLogo, "color", false, "Use the colorful logo")
 }
 
 // Execute root command
