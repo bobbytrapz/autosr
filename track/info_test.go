@@ -39,7 +39,7 @@ func TestSortByUrgency(t *testing.T) {
 
 	{
 		got := []Info{a, b, c}
-		sort.Sort(ByUrgency(got))
+		sort.Sort(byUrgency(got))
 		// lexagraphical order is the fallback
 		want := []Info{c, a, b}
 		for ndx := range got {
@@ -53,7 +53,7 @@ func TestSortByUrgency(t *testing.T) {
 		got := []Info{a, b, c}
 		got[1].StartedAt = time.Now()
 		got[2].UpcomingAt = time.Now().Add(15 * time.Minute)
-		sort.Sort(ByUrgency(got))
+		sort.Sort(byUrgency(got))
 		want := []Info{b, c, a}
 		for ndx := range got {
 			if want[ndx].Name != got[ndx].Name {

@@ -35,26 +35,25 @@ func (i Info) IsUpcoming() bool {
 
 // IsLive is true if stream is active
 func (i Info) IsLive() bool {
-	return !i.StartedAt.IsZero() && !i.IsFinished()
+	return !i.StartedAt.IsZero() && i.StartedAt.Sub(i.FinishedAt) <= 0
 }
 
 // IsFinished is true if stream has ended
 func (i Info) IsFinished() bool {
-	return !i.FinishedAt.IsZero()
+	return !i.FinishedAt.IsZero() && i.StartedAt.Sub(i.FinishedAt) > 0
 }
 
-// ByUrgency provides sorting based on target urgency
-type ByUrgency []Info
+type byUrgency []Info
 
-func (s ByUrgency) Len() int {
+func (s byUrgency) Len() int {
 	return len(s)
 }
 
-func (s ByUrgency) Swap(a, b int) {
+func (s byUrgency) Swap(a, b int) {
 	s[a], s[b] = s[b], s[a]
 }
 
-func (s ByUrgency) Less(a, b int) bool {
+func (s byUrgency) Less(a, b int) bool {
 	if s[a].IsLive() && !s[b].IsLive() {
 		return true
 	}
