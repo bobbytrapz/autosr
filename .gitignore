@@ -11,3 +11,4 @@ dist/
 
 # Test binary, built with `go test -c`
 *.test
+version/version.go
