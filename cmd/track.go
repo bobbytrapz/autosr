@@ -88,8 +88,18 @@ When you change this file the tracked targets are updated right away.
 		var appArgs []string
 		switch runtime.GOOS {
 		case "darwin":
-			app = "open"
-			appArgs = []string{"open", "-a", fn}
+			editor := os.Getenv("EDITOR")
+			if editor == "" {
+				app = "open"
+				appArgs = []string{"open", "-a", fn}
+			} else {
+				app, err = exec.LookPath(editor)
+				if err != nil {
+					fmt.Println("error: could not find", app, err)
+					return
+				}
+				appArgs = []string{app, fn}
+			}
 		case "windows":
 			sys := os.Getenv("SYSTEM32")
 			if sys != "" {
