@@ -148,10 +148,16 @@ func layout(g *gocui.Gui) error {
 			for _, t := range res.Tracking {
 				var status string
 				if t.IsLive() {
-					status = fmt.Sprintf("Now (%s)", t.StartedAt.Format(time.Kitchen))
+					at := t.StartedAt.Format(time.Kitchen)
+					status = fmt.Sprintf("Now (%s)", at)
 				} else if t.IsUpcoming() {
 					nowSep.Do(sepFn)
-					status = fmt.Sprintf("Soon (%s)", time.Until(t.UpcomingAt).Truncate(time.Second))
+					at := time.Until(t.UpcomingAt).Truncate(time.Second)
+					if at > time.Second {
+						status = fmt.Sprintf("Soon (%s)", at)
+					} else {
+						status = "Soon"
+					}
 				} else {
 					soonSep.Do(sepFn)
 					status = "Offline"
