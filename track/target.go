@@ -19,6 +19,8 @@ package track
 type Target interface {
 	// real name of streamer
 	Name() string
+	// for display in dashboard
+	Display() string
 	// url string
 	Link() string
 

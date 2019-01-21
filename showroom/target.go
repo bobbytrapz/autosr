@@ -128,9 +128,14 @@ func (t Target) EndSave(err error) {
 	return
 }
 
-// Name is the streamers real name for display in dashboard
-func (t Target) Name() string {
+// Display for display in dashboard
+func (t Target) Display() string {
 	return t.display
+}
+
+// Name is the streamers real name
+func (t Target) Name() string {
+	return t.name
 }
 
 // Link is url string where this user's streams can be found

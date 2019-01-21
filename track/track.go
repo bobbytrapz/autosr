@@ -226,7 +226,7 @@ func ListTracking() []Info {
 	var lst []Info
 	for _, t := range tracking {
 		lst = append(lst, Info{
-			Name:       t.Target.Name(),
+			Name:       t.Target.Display(),
 			Link:       t.Target.Link(),
 			UpcomingAt: t.upcomingAt,
 			StartedAt:  t.startedAt,
