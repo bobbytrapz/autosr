@@ -20,6 +20,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"syscall"
 
 	"github.com/bobbytrapz/autosr/options"
@@ -30,25 +31,43 @@ var optionsEditor string
 
 func init() {
 	rootCmd.AddCommand(optionsCmd)
-	optionsCmd.Flags().StringVarP(&optionsEditor, "editor", "e", os.Getenv("EDITOR"), "Command to use for editing.")
+	optionsCmd.LocalFlags().StringVarP(&optionsEditor, "editor", "e", os.Getenv("EDITOR"), "Command to use for editing.")
 }
 
 var optionsCmd = &cobra.Command{
 	Use:   "options",
 	Short: "Allows you to edit the autosr config file",
 	Run: func(cmd *cobra.Command, args []string) {
-		e, err := exec.LookPath(optionsEditor)
-		if err != nil {
-			fmt.Println("error: could not find", optionsEditor, err)
-			return
+		fn := filepath.Join(options.ConfigPath, options.Filename+"."+options.Format)
+
+		var err error
+		var app string
+		var appArgs []string
+		switch runtime.GOOS {
+		case "darwin":
+			app = "open"
+			appArgs = []string{"open", "-a", fn}
+		case "windows":
+			sys := os.Getenv("SYSTEM32")
+			if sys != "" {
+				sys = `C:\WINDOWS\System32`
+			}
+			app = filepath.Join(sys, `Notepad.exe`)
+			appArgs = []string{app, "/W", fn}
+		default:
+			// assume unix system
+			app, err = exec.LookPath(optionsEditor)
+			if err != nil {
+				fmt.Println("error: could not find", optionsEditor, err)
+				return
+			}
+			appArgs = []string{app, fn}
 		}
 
 		if err := os.MkdirAll(options.ConfigPath, 0700); err != nil {
 			fmt.Println("error:", err)
 			return
 		}
-
-		fn := filepath.Join(options.ConfigPath, options.Filename+"."+options.Format)
 
 		f, err := os.OpenFile(fn, os.O_RDONLY|os.O_CREATE, 0600)
 		if err != nil {
@@ -57,7 +76,7 @@ var optionsCmd = &cobra.Command{
 		}
 		f.Close()
 
-		err = syscall.Exec(e, []string{optionsEditor, fn}, os.Environ())
+		err = syscall.Exec(app, appArgs, os.Environ())
 
 		fmt.Println("error:", err)
 		return

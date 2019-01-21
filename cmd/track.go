@@ -17,9 +17,11 @@ package cmd
 
 import (
 	"fmt"
+	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"syscall"
 
 	"github.com/bobbytrapz/autosr/options"
@@ -27,22 +29,84 @@ import (
 )
 
 var trackListEditor string
+var shouldDump bool
 
 const trackListFileName = "track.list"
 
 func init() {
 	rootCmd.AddCommand(trackCmd)
-	trackCmd.Flags().StringVarP(&trackListEditor, "editor", "e", os.Getenv("EDITOR"), "Command to use for editing.")
+	trackCmd.LocalFlags().StringVarP(&trackListEditor, "editor", "e", os.Getenv("EDITOR"), "Command to use for editing.")
+	trackCmd.Flags().BoolVarP(&shouldDump, "dump", "d", false, "Dump track list")
+}
+
+func copyTo(path string) error {
+	fn := filepath.Join(options.ConfigPath, trackListFileName)
+
+	src, err := os.OpenFile(fn, os.O_RDONLY|os.O_CREATE, 0600)
+	if err != nil {
+		return fmt.Errorf("cmd.copyTo: %s", err)
+	}
+	defer src.Close()
+
+	dst, err := os.OpenFile(path, os.O_WRONLY|os.O_TRUNC|os.O_CREATE, 0600)
+	if err != nil {
+		return fmt.Errorf("cmd.copyTo: %s", err)
+	}
+	defer dst.Close()
+
+	if _, err := io.Copy(dst, src); err != nil {
+		return fmt.Errorf("cmd.copyTo: %s", err)
+	}
+
+	return nil
 }
 
 var trackCmd = &cobra.Command{
 	Use:   "track",
 	Short: "Allows you to provide a list of urls to check for streams",
+	Long: `The files track.list and track.list.backup can be found in the config directory.
+When you change this file the tracked targets are updated right away.
+`,
 	Run: func(cmd *cobra.Command, args []string) {
-		e, err := exec.LookPath(trackListEditor)
-		if err != nil {
-			fmt.Println("error: could not find", trackListEditor, err)
+		fn := filepath.Join(options.ConfigPath, trackListFileName)
+		if shouldDump {
+			f, err := os.Open(fn)
+			if err != nil {
+				fmt.Println("error:", err)
+				return
+			}
+			defer f.Close()
+
+			if _, err := io.Copy(os.Stdout, f); err != nil {
+				fmt.Println("error:", err)
+				return
+			}
+
 			return
+		}
+
+		var err error
+		var app string
+		var appArgs []string
+		switch runtime.GOOS {
+		case "darwin":
+			app = "open"
+			appArgs = []string{"open", "-a", fn}
+		case "windows":
+			sys := os.Getenv("SYSTEM32")
+			if sys != "" {
+				sys = `C:\WINDOWS\System32`
+			}
+			app = filepath.Join(sys, `Notepad.exe`)
+			appArgs = []string{app, "/W", fn}
+		default:
+			// assume unix system
+			app, err = exec.LookPath(trackListEditor)
+			if err != nil {
+				fmt.Println("error: could not find", trackListEditor, err)
+				return
+			}
+			appArgs = []string{app, fn}
 		}
 
 		if err := os.MkdirAll(options.ConfigPath, 0700); err != nil {
@@ -50,16 +114,20 @@ var trackCmd = &cobra.Command{
 			return
 		}
 
-		fn := filepath.Join(options.ConfigPath, trackListFileName)
+		if err := copyTo(fn + ".backup"); err != nil {
+			fmt.Println("error:", err)
+			return
+		}
 
 		f, err := os.OpenFile(fn, os.O_RDONLY|os.O_CREATE, 0600)
 		if err != nil {
 			fmt.Println("error:", err)
 			return
 		}
+		// we only wanted to create the file
 		f.Close()
 
-		err = syscall.Exec(e, []string{trackListEditor, fn}, os.Environ())
+		err = syscall.Exec(app, appArgs, os.Environ())
 
 		fmt.Println("error:", err)
 		return
