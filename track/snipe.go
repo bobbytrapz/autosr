@@ -46,11 +46,6 @@ func SnipeAt(tracked *tracked, at time.Time) error {
 		return errors.New("track.SnipeAt: invalid time")
 	}
 
-	if tracked.Status() == saving {
-		// already saving so we should not cancel it
-		return nil
-	}
-
 	if tracked.Status() == sniping {
 		// already sniping so this is redudant
 		return nil
@@ -76,7 +71,11 @@ func snipe(ctx context.Context, tracked *tracked) error {
 		return errors.New("track.snipe: invalid time")
 	}
 
-	tracked.SetStatus(sniping)
+	if tracked.Status() != saving {
+		// if we are saving then this is called see if there was an error with the recording
+		// so we should keep the status
+		tracked.SetStatus(sniping)
+	}
 	tracked.Target.BeginSnipe()
 
 	// snipe target
@@ -96,7 +95,7 @@ func snipe(ctx context.Context, tracked *tracked) error {
 				return
 			case <-check.C:
 				// set timeout for sniping
-				timeout := time.NewTimer(15 * time.Minute)
+				timeout := time.NewTimer(5 * time.Minute)
 				defer timeout.Stop()
 
 				// check to see if the target's stream has actually begun

@@ -51,9 +51,6 @@ func Save(ctx context.Context, tracked *tracked) error {
 
 	// handle canceling downloader
 	go func() {
-		tracked.Lock()
-		defer tracked.Unlock()
-
 		wg.Add(1)
 		defer wg.Done()
 
@@ -61,10 +58,12 @@ func Save(ctx context.Context, tracked *tracked) error {
 			select {
 			case <-ctx.Done():
 				log.Println("track.Save:", tracked.Target.Name(), "canceled")
+				tracked.SetStatus(sleeping)
+				tracked.Target.EndSave(nil)
 				return
 			case <-exit:
+				log.Printf("track.Save: %s done [%s %d]", tracked.Target.Name(), cmd.Args[0], cmd.Process.Pid)
 				tracked.SetStatus(sleeping)
-				tracked.SetFinishedAt(time.Now())
 				tracked.Target.EndSave(nil)
 				return
 			}
@@ -78,12 +77,14 @@ func Save(ctx context.Context, tracked *tracked) error {
 
 	// monitor downloader
 	go func() {
-		if err := cmd.Wait(); err != nil {
+		defer close(exit)
+
+		err := cmd.Wait()
+		if err != nil {
 			log.Println("track.Save:", tracked.Target.Name(), err)
-			// something went wrong so try again right now
-			SnipeTargetAt(tracked.Target, time.Now())
+			// something may have gone wrong so try again right now
+			SnipeAt(tracked, time.Now())
 		}
-		exit <- struct{}{}
 	}()
 
 	return nil
