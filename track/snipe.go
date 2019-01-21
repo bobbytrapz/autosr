@@ -95,8 +95,9 @@ func snipe(ctx context.Context, tracked *tracked) error {
 				return
 			case <-check.C:
 				// set timeout for sniping
-				timeout := time.NewTimer(5 * time.Minute)
-				defer timeout.Stop()
+				timeout := 5 * time.Minute
+				to := time.NewTimer(timeout)
+				defer to.Stop()
 
 				// check to see if the target's stream has actually begun
 				url, err := tracked.Target.Check()
@@ -109,8 +110,12 @@ func snipe(ctx context.Context, tracked *tracked) error {
 								log.Println("track.snipe:", tracked.Target.Name(), "canceled")
 								tracked.SetStatus(sleeping)
 								return
-							case <-timeout.C:
+							case <-to.C:
 								log.Println("track.snipe:", tracked.Target.Name(), "timeout")
+								if tracked.IsLive() {
+									// so we were finished minutes ago
+									tracked.SetFinishedAt(time.Now().Add(-timeout))
+								}
 								return
 							case <-time.After(backoff.DefaultPolicy.Duration(n)):
 								url, err = e.Retry()
