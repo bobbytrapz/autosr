@@ -67,10 +67,10 @@ var v = viper.New()
 
 func init() {
 	// set defaults
-	v.SetDefault("poll_rate", defaultPollRate)
+	v.SetDefault("check_every", defaultPollRate)
 	v.SetDefault("user_agent", defaultUserAgent)
-	v.SetDefault("stream_downloader", defaultStreamDownloader)
-	v.SetDefault("listen_addr", defaultListenAddr)
+	v.SetDefault("download_with", defaultStreamDownloader)
+	v.SetDefault("listen_on", defaultListenAddr)
 
 	v.SetConfigType(Format)
 	v.SetConfigName(Filename)
@@ -95,11 +95,11 @@ func init() {
 
 	ConfigPath = configPath
 
-	v.SetDefault("SavePath", savePath)
+	v.SetDefault("save_to", savePath)
 	v.AddConfigPath(configPath)
 
 	if err := v.ReadInConfig(); err != nil {
-		p := filepath.Join(configPath, Filename)
+		p := filepath.Join(configPath, Filename+"."+Format)
 		if err := v.WriteConfigAs(p); err != nil {
 			panic(err)
 		}

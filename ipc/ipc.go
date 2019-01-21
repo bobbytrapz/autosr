@@ -32,7 +32,7 @@ var server *http.Server
 
 // Start ipc server
 func Start() {
-	addr := options.Get("listen_addr")
+	addr := options.Get("listen_on")
 
 	c := new(Command)
 	rpc.Register(c)

@@ -90,9 +90,9 @@ func Save(ctx context.Context, tracked *tracked) error {
 
 // RunDownloader runs the user's downloader
 func RunDownloader(ctx context.Context, url, name string) (cmd *exec.Cmd, err error) {
-	saveTo := filepath.Join(options.Get("save_path"), name)
+	saveTo := filepath.Join(options.Get("save_to"), name)
 	ua := fmt.Sprintf("User-Agent=%s", options.Get("user_agent"))
-	app := options.Get("stream_downloader")
+	app := options.Get("download_with")
 
 	fn := fmt.Sprintf("%s-%s", time.Now().Format("2006-01-02"), name)
 	saveAs := fn

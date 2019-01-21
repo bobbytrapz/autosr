@@ -86,7 +86,7 @@ func Poll(pollfn func() error) (cancel context.CancelFunc, err error) {
 
 	// poll
 	go func() {
-		pollRate := options.GetDuration("poll_rate")
+		pollRate := options.GetDuration("check_every")
 		log.Println("track.Poll:", pollRate)
 		tick := time.NewTicker(pollRate)
 		defer tick.Stop()
@@ -98,7 +98,7 @@ func Poll(pollfn func() error) (cancel context.CancelFunc, err error) {
 			case <-tick.C:
 				attempt()
 				// check if poll rate was adjusted
-				p := options.GetDuration("poll_rate")
+				p := options.GetDuration("check_every")
 				if p != pollRate {
 					pollRate = p
 					tick.Stop()
