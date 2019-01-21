@@ -27,6 +27,13 @@ import (
 
 const retryAttempts = 3
 
+var check = make(chan int, 1)
+
+// CheckNow makes poll process right now
+func CheckNow() {
+	check <- 1
+}
+
 // Poll allows modules to monitor a website
 func Poll(ctx context.Context, pollfn func() error) error {
 	attempt := func() {
@@ -66,6 +73,7 @@ func Poll(ctx context.Context, pollfn func() error) error {
 				log.Println("track.Poll: done")
 				return
 			case <-tick.C:
+			case <-check:
 				attempt()
 				// check if poll rate was adjusted
 				p := options.GetDuration("check_every")
