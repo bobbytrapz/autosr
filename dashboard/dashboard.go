@@ -53,7 +53,7 @@ func Run(bColor bool) {
 	var err error
 	remote, err = rpc.DialHTTP("tcp", "localhost:4846")
 	if err != nil {
-		fmt.Println("We cannot connect to the server. Try 'autosr shutdown' then try again.")
+		fmt.Println("We cannot connect to the server. Try 'autosr stop' then try again.")
 		return
 	}
 
