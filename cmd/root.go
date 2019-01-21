@@ -115,19 +115,10 @@ Details can be found at https://github.com/bobbytrapz/autosr/LICENSE.
 		defer cancel()
 
 		// start ipc
-		ipc.Start()
-		defer ipc.Stop()
+		ipc.Start(ctx)
 
 		// start showroom
-		showroom.Start()
-		defer showroom.Stop()
-
-		/*
-			url := "https://www.showroom-live.com/shanana"
-			if err := showroom.AddTargetFromURL(url); err != nil {
-				panic(err)
-			}
-		*/
+		showroom.Start(ctx)
 
 		// handle interrupt
 		sig := make(chan os.Signal, 1)

@@ -28,17 +28,18 @@ import (
 	"github.com/bobbytrapz/autosr/options"
 )
 
-var server *http.Server
+// Command to perform
+type Command struct{}
 
 // Start ipc server
-func Start() {
+func Start(ctx context.Context) {
 	addr := options.Get("listen_on")
 
 	c := new(Command)
 	rpc.Register(c)
 	rpc.HandleHTTP()
 
-	server = &http.Server{
+	server := &http.Server{
 		Addr: addr,
 	}
 
@@ -58,16 +59,13 @@ func Start() {
 			}
 		}
 	}()
-}
 
-// Stop ipc server
-func Stop() {
-	log.Println("ipc.Stop: finishing...")
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-	server.Shutdown(ctx)
-	log.Println("ipc.Stop: done")
+	go func() {
+		<-ctx.Done()
+		log.Println("ipc.Stop: finishing...")
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+		server.Shutdown(ctx)
+		log.Println("ipc.Stop: done")
+	}()
 }
-
-// Command to perform
-type Command struct{}

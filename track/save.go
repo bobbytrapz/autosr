@@ -61,6 +61,7 @@ func Save(ctx context.Context, tracked *tracked) error {
 			select {
 			case <-ctx.Done():
 				log.Println("track.Save:", tracked.Target.Name(), "canceled")
+				return
 			case <-exit:
 				tracked.SetStatus(sleeping)
 				tracked.SetFinishedAt(time.Now())

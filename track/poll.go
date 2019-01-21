@@ -28,10 +28,7 @@ import (
 const retryAttempts = 3
 
 // Poll allows modules to monitor a website
-func Poll(pollfn func() error) (cancel context.CancelFunc, err error) {
-	ctx := context.Background()
-	ctx, cancel = context.WithCancel(ctx)
-
+func Poll(ctx context.Context, pollfn func() error) error {
 	attempt := func() {
 		err := pollfn()
 		if err != nil {
@@ -50,33 +47,6 @@ func Poll(pollfn func() error) (cancel context.CancelFunc, err error) {
 					}
 					log.Println("track.Poll:", err)
 				}
-			}
-		}
-
-		if err != nil {
-			return
-		}
-
-		// attempt ok
-		log.Println("track.Poll: ok")
-		m.RLock()
-		defer m.RUnlock()
-		for link, tracked := range tracking {
-			status := tracked.Status()
-
-			log.Println("track.Poll: check", link)
-			if status == sleeping && tracked.IsUpcoming() {
-				tracked.Lock()
-				// set up a context for this target
-				ctx := context.Background()
-				ctx, cancel := context.WithCancel(ctx)
-				tracked.SetCancel(cancel)
-
-				// begin sniping the target stream
-				if err := Snipe(ctx, tracked); err != nil {
-					log.Println("track.Poll:", err)
-				}
-				tracked.Unlock()
 			}
 		}
 	}
@@ -109,5 +79,5 @@ func Poll(pollfn func() error) (cancel context.CancelFunc, err error) {
 		}
 	}()
 
-	return
+	return nil
 }

@@ -16,15 +16,19 @@
 package showroom
 
 import (
+	"bufio"
 	"context"
 	"fmt"
 	"log"
+	"os"
+	"strings"
 	"sync"
 	"time"
 
 	"github.com/bobbytrapz/autosr/backoff"
 	"github.com/bobbytrapz/autosr/retry"
 	"github.com/bobbytrapz/autosr/track"
+	"github.com/fsnotify/fsnotify"
 )
 
 // User in showroom
@@ -110,16 +114,64 @@ func update() error {
 	return nil
 }
 
-var cancel context.CancelFunc
-
 // Start showroom module
-func Start() (err error) {
-	cancel, err = track.Poll(update)
+func Start(ctx context.Context) (err error) {
+	// read the track list to find out who we are watching
+	if err = readTrackList(); err != nil {
+		err = fmt.Errorf("showroom.Start: %s", err)
+		return
+	}
+
+	if err = track.Poll(ctx, update); err != nil {
+		err = fmt.Errorf("showroom.Start: %s", err)
+		return
+	}
+
+	// watch track list
+	go func() {
+		w, err := fsnotify.NewWatcher()
+		if err != nil {
+			log.Println("showroom.Start: cannot make watcher:", err)
+			return
+		}
+
+		if err := w.Add(track.ListPath); err != nil {
+			log.Println("showroom.Start: cannot watch track list:", err)
+		}
+
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case ev := <-w.Events:
+				log.Println("showroom.Start: watch:", ev.Name)
+				readTrackList()
+			case err := <-w.Errors:
+				log.Println("showroom.Start: watch error:", err)
+			}
+		}
+	}()
 
 	return
 }
 
-// Stop showroom module
-func Stop() {
-	cancel()
+func readTrackList() error {
+	f, err := os.Open(track.ListPath)
+	if err != nil {
+		return fmt.Errorf("showroom.readTrackList: %s", err)
+	}
+	defer f.Close()
+
+	s := bufio.NewScanner(f)
+	for s.Scan() {
+		url := strings.TrimSpace(s.Text())
+		if url == "" {
+			continue
+		}
+
+		if err := AddTargetFromURL(url); err != nil {
+			fmt.Println("showroom:", err)
+		}
+	}
+	return nil
 }

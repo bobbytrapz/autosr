@@ -18,9 +18,12 @@ package track
 import (
 	"context"
 	"errors"
+	"path/filepath"
 	"sort"
 	"sync"
 	"time"
+
+	"github.com/bobbytrapz/autosr/options"
 )
 
 type status int
@@ -220,3 +223,6 @@ func ListTracking() []Info {
 
 	return lst
 }
+
+// ListPath to list of urls to watch
+var ListPath = filepath.Join(options.ConfigPath, "track.list")

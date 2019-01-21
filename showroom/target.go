@@ -47,7 +47,8 @@ func AddTargetFromURL(link string) error {
 
 	err = track.AddTarget(t)
 	if err != nil {
-		return fmt.Errorf("showroom.AddTargetFromURL: %s", err)
+		// we must be already targeting
+		return nil
 	}
 
 	m.Lock()
