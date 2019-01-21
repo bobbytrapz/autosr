@@ -27,15 +27,16 @@ import (
 )
 
 // AddTargetFromURL adds showroom user using the url
-func AddTargetFromURL(link string) error {
+// returns true if they were actually added
+func AddTargetFromURL(link string) (bool, error) {
 	_, err := url.Parse(link)
 	if err != nil {
-		return fmt.Errorf("showroom.AddTargetFromURL: '%s' %s", link, err)
+		return false, fmt.Errorf("showroom.AddTargetFromURL: '%s' %s", link, err)
 	}
 
 	s, err := fetchRoom(link)
 	if err != nil {
-		return fmt.Errorf("showroom.AddTargetFromURL: '%s' %s", link, err)
+		return false, fmt.Errorf("showroom.AddTargetFromURL: '%s' %s", link, err)
 	}
 
 	t := Target{
@@ -48,7 +49,7 @@ func AddTargetFromURL(link string) error {
 	err = track.AddTarget(t)
 	if err != nil {
 		// we must be already targeting
-		return nil
+		return false, nil
 	}
 
 	m.Lock()
@@ -60,16 +61,18 @@ func AddTargetFromURL(link string) error {
 		log.Println("showroom.AddTargetFromURL:", t.name, "is live now!", streamURL)
 		// they are live now so snipe them now
 		track.SnipeTargetAt(t, time.Now())
-		return nil
+		return true, nil
 	}
 
-	return nil
+	return true, nil
 }
 
 // RemoveTargetFromURL removes showroom user using the url
-func RemoveTargetFromURL(link string) error {
+// returns true if they were actually removed
+func RemoveTargetFromURL(link string) (bool, error) {
 	if err := track.RemoveTarget(link); err != nil {
-		return fmt.Errorf("showroom.RemoveTargetFromURL: %s", err)
+		// this target does not exist
+		return false, nil
 	}
 
 	m.Lock()
@@ -84,7 +87,7 @@ func RemoveTargetFromURL(link string) error {
 	}
 	m.Unlock()
 
-	return nil
+	return true, nil
 }
 
 // Target showroom streamer

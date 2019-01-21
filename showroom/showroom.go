@@ -137,6 +137,7 @@ func Start(ctx context.Context) (err error) {
 
 		if err := w.Add(track.ListPath); err != nil {
 			log.Println("showroom.Start: cannot watch track list:", err)
+			return
 		}
 
 		for {
@@ -144,10 +145,10 @@ func Start(ctx context.Context) (err error) {
 			case <-ctx.Done():
 				return
 			case ev := <-w.Events:
-				log.Println("showroom.Start: watch:", ev.Name)
+				log.Println("showroom.Start: update:", ev.Name)
 				readTrackList()
 			case err := <-w.Errors:
-				log.Println("showroom.Start: watch error:", err)
+				log.Println("showroom.Start: error:", err)
 			}
 		}
 	}()
@@ -164,6 +165,9 @@ func readTrackList() error {
 
 	var wg sync.WaitGroup
 	s := bufio.NewScanner(f)
+
+	check := make(map[string]bool, len(targets))
+
 	for s.Scan() {
 		url := strings.TrimSpace(s.Text())
 		if url == "" || url[0] == '#' {
@@ -173,13 +177,30 @@ func readTrackList() error {
 		go func() {
 			wg.Add(1)
 			defer wg.Done()
-			if err := AddTargetFromURL(url); err != nil {
+			ok, err := AddTargetFromURL(url)
+			if err != nil {
 				fmt.Println("showroom:", err)
 				return
 			}
-
-			fmt.Println("showroom: added", url)
+			check[url] = true
+			if ok {
+				fmt.Println("showroom: added", url)
+			}
 		}()
+	}
+
+	// remove missing targets
+	for _, t := range targets {
+		if _, ok := check[t.link]; !ok {
+			ok, err := RemoveTargetFromURL(t.link)
+			if err != nil {
+				fmt.Println("showroom:", err)
+				continue
+			}
+			if ok {
+				fmt.Println("showroom: removed", t.link)
+			}
+		}
 	}
 
 	// wait until all url have been added
