@@ -16,68 +16,32 @@
 package ipc
 
 import (
-	"fmt"
-	"sort"
-	"sync"
-	"time"
-
 	"github.com/bobbytrapz/autosr/track"
-	"github.com/bobbytrapz/autosr/version"
 )
 
-// State of the dashboard
-type State struct {
-	Message        string
-	Tracking       []track.Info
-	SelectedTarget string
+// Dashboard represents a connected dashboard
+type Dashboard struct {
+	SelectURL string
+	Tracking  []track.Info
 }
 
-// DashboardClient represents a connected dashboard
-type DashboardClient struct {
-	SelectTarget string
-}
+var status Dashboard
 
-var m sync.Mutex
-var status = State{
-	Message: fmt.Sprintf("autosr %s", version.String),
-	Tracking: []track.Info{
-		track.Info{
-			Name: "菅 原 早 記",
-			Link: "https://www.showroom-live.com/48_SUGAHARA_SAKI",
-		},
-		track.Info{
-			Name: "齊 藤 京 子",
-			Link: "https://www.showroom-live.com/46_KYOKO_SAITO",
-		},
-		track.Info{
-			Name: "田 口 愛 佳",
-			Link: "https://www.showroom-live.com/48_Manaka_Taguchi",
-		},
-	},
-}
+func replicate(req *Dashboard, res *Dashboard) {
+	if req.SelectURL == "?" {
+		res.SelectURL = status.SelectURL
+	} else {
+		status.SelectURL = req.SelectURL
+	}
 
-func init() {
-	status.Tracking[1].StartedAt = time.Now()
-	status.Tracking[2].UpcomingAt = time.Now().Add(15 * time.Minute)
-
-	sort.Sort(track.ByUrgency(status.Tracking))
-}
-
-func replicate(dst *State) {
-	dst.Message = status.Message
-	dst.SelectedTarget = status.SelectedTarget
-
-	dst.Tracking = make([]track.Info, len(status.Tracking))
-	copy(dst.Tracking, status.Tracking)
+	lst := track.ListTracking()
+	res.Tracking = make([]track.Info, len(lst))
+	copy(res.Tracking, lst)
 }
 
 // Status for the dashboard
-func (c *Command) Status(client *DashboardClient, state *State) error {
-	if client.SelectTarget != "" {
-		status.SelectedTarget = client.SelectTarget
-	}
-
-	replicate(state)
+func (c *Command) Status(req *Dashboard, res *Dashboard) error {
+	replicate(req, res)
 
 	return nil
 }

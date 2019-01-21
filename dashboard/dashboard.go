@@ -28,14 +28,13 @@ import (
 
 var m sync.Mutex
 var remote *rpc.Client
-var update chan struct{}
-var client ipc.DashboardClient
-var state ipc.State
+var req = ipc.Dashboard{
+	SelectURL: "?",
+}
+var res ipc.Dashboard
 
 // Run the dashboard
 func Run() {
-	update = make(chan struct{})
-
 	// connect to server
 	var err error
 	remote, err = rpc.DialHTTP("tcp", "localhost:4846")
@@ -69,8 +68,6 @@ func Run() {
 			select {
 			case <-poll.C:
 				redraw(g)
-			case <-update:
-				redraw(g)
 			}
 		}
 	}()
@@ -83,7 +80,7 @@ func Run() {
 
 func redraw(g *gocui.Gui) {
 	m.Lock()
-	if err := remote.Call("Command.Status", client, &state); err != nil {
+	if err := remote.Call("Command.Status", req, &res); err != nil {
 		// poll was not successful so close dashboard
 		g.Update(func(g *gocui.Gui) error {
 			return gocui.ErrQuit
@@ -103,33 +100,15 @@ func redraw(g *gocui.Gui) {
 	})
 }
 
-/*
-var rainbow_logo = `
-[0;1;35;95m┏━[0;1;31;91m┓╻[0m [0;1;33;93m╻[0;1;32;92m╺┳[0;1;36;96m╸┏[0;1;34;94m━┓[0;1;35;95m┏━[0;1;31;91m┓┏[0;1;33;93m━┓[0m
-[0;1;31;91m┣━[0;1;33;93m┫┃[0m [0;1;32;92m┃[0m [0;1;36;96m┃[0m [0;1;34;94m┃[0m [0;1;35;95m┃[0;1;31;91m┗━[0;1;33;93m┓┣[0;1;32;92m┳┛[0m
-[0;1;33;93m╹[0m [0;1;32;92m╹┗[0;1;36;96m━┛[0m [0;1;34;94m╹[0m [0;1;35;95m┗[0;1;31;91m━┛[0;1;33;93m┗━[0;1;32;92m┛╹[0;1;36;96m┗╸[0m
-`
-*/
-
-/*
-var logo = `
-┏━┓╻ ╻╺┳╸┏━┓┏━┓┏━┓
-┣━┫┃ ┃ ┃ ┃ ┃┗━┓┣┳┛
-╹ ╹┗━┛ ╹ ┗━┛┗━┛╹┗╸
-`
-*/
-
 var logo = `
  ⢀⣀ ⡀⢀ ⣰⡀ ⢀⡀ ⢀⣀ ⡀⣀
  ⠣⠼ ⠣⠼ ⠘⠤ ⠣⠜ ⠭⠕ ⠏
 `
 
-/*
-var logo = `
+var rainbow = `
  [0;1;35;95m⢀[0;1;31;91m⣀[0m [0;1;33;93m⡀⢀[0m [0;1;32;92m⣰[0;1;36;96m⡀[0m [0;1;34;94m⢀⡀[0m [0;1;35;95m⢀[0;1;31;91m⣀[0m [0;1;33;93m⡀⣀[0m
  [0;1;31;91m⠣[0;1;33;93m⠼[0m [0;1;32;92m⠣⠼[0m [0;1;36;96m⠘[0;1;34;94m⠤[0m [0;1;35;95m⠣⠜[0m [0;1;31;91m⠭[0;1;33;93m⠕[0m [0;1;32;92m⠏[0m
 `
-*/
 
 func layout(g *gocui.Gui) error {
 
@@ -147,15 +126,18 @@ func layout(g *gocui.Gui) error {
 			fmt.Fprintln(v, logo)
 
 			tw := tabwriter.NewWriter(v, 0, 0, 8, ' ', 0)
-			if len(state.Tracking) > 0 {
+			if len(res.Tracking) > 0 {
 				fmt.Fprintf(tw, "STATUS\tNAME\tURL\n")
+			} else {
+				fmt.Fprintln(tw, "use 'autosr track' to add targets.")
+				fmt.Fprintln(tw, "For help visit: https://github.com/bobbytrapz/autosr")
 			}
 			var nowSep sync.Once
 			var soonSep sync.Once
 			sepFn := func() {
 				fmt.Fprintln(tw, "\t\t\t")
 			}
-			for _, t := range state.Tracking {
+			for _, t := range res.Tracking {
 				var status string
 				if t.IsLive() {
 					status = fmt.Sprintf("Now (%s)", t.StartedAt.Format(time.Kitchen))
@@ -188,7 +170,7 @@ func keys(g *gocui.Gui) (err error) {
 		return
 	}
 
-	if err = g.SetKeybinding("", gocui.KeyEnter, gocui.ModNone, selectTarget); err != nil {
+	if err = g.SetKeybinding("", gocui.KeyEnter, gocui.ModNone, selectURL); err != nil {
 		return
 	}
 
@@ -199,17 +181,12 @@ func quit(g *gocui.Gui, v *gocui.View) error {
 	return gocui.ErrQuit
 }
 
-func selectTarget(g *gocui.Gui, v *gocui.View) error {
-	return SelectTarget(fmt.Sprintf("https://dummy.selection/t=%d", time.Now().Unix()))
-}
-
-// SelectTarget for details
-func SelectTarget(link string) error {
+func selectURL(g *gocui.Gui, v *gocui.View) error {
 	m.Lock()
 	defer m.Unlock()
 
-	client.SelectTarget = link
-	update <- struct{}{}
+	req.SelectURL = fmt.Sprintf("https://dummy.selection/t=%d", time.Now().Unix())
+	redraw(g)
 
 	return nil
 }
