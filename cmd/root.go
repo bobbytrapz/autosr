@@ -139,8 +139,8 @@ var shouldRunInForeground = false
 var shouldNotStartDashboard = false
 
 func init() {
-	rootCmd.PersistentFlags().BoolVarP(&shouldRunInForeground, "foreground", "f", false, "Run autosr in the foreground")
-	rootCmd.PersistentFlags().BoolVarP(&shouldNotStartDashboard, "no-dashboard", "d", false, "Do not start the dashboard")
+	rootCmd.LocalFlags().BoolVarP(&shouldRunInForeground, "foreground", "f", false, "Run autosr in the foreground")
+	rootCmd.LocalFlags().BoolVarP(&shouldNotStartDashboard, "no-dashboard", "d", false, "Do not start the dashboard")
 }
 
 // Execute root command
