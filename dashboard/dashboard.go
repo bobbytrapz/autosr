@@ -133,7 +133,7 @@ func layout(g *gocui.Gui) error {
 				fmt.Fprintln(v, logo)
 			}
 
-			tw := tabwriter.NewWriter(v, 0, 0, 8, ' ', 0)
+			tw := tabwriter.NewWriter(v, 0, 0, 4, ' ', 0)
 			if len(res.Tracking) > 0 {
 				fmt.Fprintf(tw, "STATUS\tNAME\tURL\n")
 			} else {
