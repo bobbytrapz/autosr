@@ -101,7 +101,7 @@ func RunDownloader(ctx context.Context, url, name string) (cmd *exec.Cmd, err er
 		if _, err := os.Stat(p); os.IsNotExist(err) {
 			break
 		}
-		saveAs = fmt.Sprintf("%s-%d", fn, n)
+		saveAs = fmt.Sprintf("%s %d", fn, n)
 	}
 	saveAs = saveAs + ".ts"
 
