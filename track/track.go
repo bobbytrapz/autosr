@@ -134,6 +134,21 @@ func RemoveTarget(link string) error {
 	return nil
 }
 
+// CancelTarget processing
+func CancelTarget(link string) error {
+	m.Lock()
+	defer m.Unlock()
+
+	t, ok := tracking[link]
+	if !ok {
+		return errors.New("track.CancelTarget: we are not tracking this target")
+	}
+
+	t.Cancel()
+
+	return nil
+}
+
 // UpcomingAt for target
 func (t *tracked) UpcomingAt() time.Time {
 	t.RLock()
