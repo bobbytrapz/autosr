@@ -30,7 +30,7 @@ type Info struct {
 
 // IsUpcoming is true if stream has a known upcoming time
 func (i Info) IsUpcoming() bool {
-	return !i.UpcomingAt.IsZero()
+	return time.Until(i.UpcomingAt) > 0
 }
 
 // IsLive is true if stream is active
