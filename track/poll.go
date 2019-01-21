@@ -63,6 +63,8 @@ func Poll(ctx context.Context, pollfn func() error) error {
 
 	// poll
 	go func() {
+		defer close(check)
+
 		pollRate := options.GetDuration("check_every")
 		log.Println("track.Poll:", pollRate)
 		tick := time.NewTicker(pollRate)
