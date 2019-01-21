@@ -35,7 +35,7 @@ func (i Info) IsUpcoming() bool {
 
 // IsLive is true if stream is active
 func (i Info) IsLive() bool {
-	return !i.StartedAt.IsZero() && i.FinishedAt.IsZero()
+	return !i.StartedAt.IsZero() && !i.IsFinished()
 }
 
 // IsFinished is true if stream has ended
