@@ -111,7 +111,7 @@ When you change this file the tracked targets are updated right away.
 			// assume unix system
 			editor := os.Getenv("EDITOR")
 			if editor == "" {
-				fmt.Println("You need to the $EDITOR flag.", err)
+				fmt.Println("You need to set the $EDITOR flag.", err)
 				return
 			}
 			app, err = exec.LookPath(editor)
