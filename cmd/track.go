@@ -95,7 +95,7 @@ When you change this file the tracked targets are updated right away.
 			} else {
 				app, err = exec.LookPath(editor)
 				if err != nil {
-					fmt.Println("error: could not find", app, err)
+					fmt.Println("error: could not find", editor, err)
 					return
 				}
 				appArgs = []string{app, fn}
@@ -116,7 +116,7 @@ When you change this file the tracked targets are updated right away.
 			}
 			app, err = exec.LookPath(editor)
 			if err != nil {
-				fmt.Println("error: could not find", app, err)
+				fmt.Println("error: could not find", editor, err)
 				return
 			}
 			appArgs = []string{app, fn}
