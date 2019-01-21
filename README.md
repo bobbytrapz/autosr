@@ -43,13 +43,13 @@ Hit enter and powershell should open.
 From this point on all the instructions should be run in powershell.
 
 First we need to install scoop.
-According to their (their website)[https://scoop.sh] we can do this:
+According to their [their website](https://scoop.sh) we can do this:
 
 ```
 iex (new-object net.webclient).downloadstring('https://get.scoop.sh')
 ```
 
-For help refer to (documentation)[https://github.com/lukesampson/scoop/wiki/Quick-Start]
+For help refer to [documentation](https://github.com/lukesampson/scoop/wiki/Quick-Start)
 
 After scoop is installed we can install autosr.
 
@@ -98,7 +98,7 @@ autosr stop
 If anything is recorded, by default they can be found in your home directory in a 'autosr' directory.
 
 The files will be in ts format. You can encode them however you like or just watch them.
-I recommend using (mpv)[https://mpv.io]
+I recommend using [mpv](https://mpv.io)
 
 ## Set custom options
 
