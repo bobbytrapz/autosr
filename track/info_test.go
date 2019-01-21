@@ -44,7 +44,7 @@ func TestSortByUrgency(t *testing.T) {
 		want := []Info{c, a, b}
 		for ndx := range got {
 			if want[ndx].Name != got[ndx].Name {
-				t.Error("want", want[ndx], "got", got[ndx])
+				t.Error("want", want[ndx].Name, "got", got[ndx].Name)
 			}
 		}
 	}
@@ -57,7 +57,7 @@ func TestSortByUrgency(t *testing.T) {
 		want := []Info{b, c, a}
 		for ndx := range got {
 			if want[ndx].Name != got[ndx].Name {
-				t.Error("want", want[ndx], "got", got[ndx])
+				t.Error("want", want[ndx].Name, "got", got[ndx].Name)
 			}
 		}
 	}

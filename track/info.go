@@ -35,12 +35,12 @@ func (i Info) IsUpcoming() bool {
 
 // IsLive is true if stream is active
 func (i Info) IsLive() bool {
-	return !i.StartedAt.IsZero() && i.StartedAt.Sub(i.FinishedAt) <= 0
+	return !i.StartedAt.IsZero() && i.StartedAt.Sub(i.FinishedAt) >= 0
 }
 
 // IsFinished is true if stream has ended
 func (i Info) IsFinished() bool {
-	return !i.FinishedAt.IsZero() && i.StartedAt.Sub(i.FinishedAt) > 0
+	return !i.FinishedAt.IsZero() && i.StartedAt.Sub(i.FinishedAt) < 0
 }
 
 type byUrgency []Info
