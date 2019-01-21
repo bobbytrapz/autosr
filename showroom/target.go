@@ -16,10 +16,12 @@
 package showroom
 
 import (
+	"bytes"
 	"fmt"
 	"log"
 	"net/url"
 	"path"
+	"strings"
 	"time"
 
 	"github.com/bobbytrapz/autosr/retry"
@@ -39,11 +41,19 @@ func AddTargetFromURL(link string) (bool, error) {
 		return false, fmt.Errorf("showroom.AddTargetFromURL: '%s' %s", link, err)
 	}
 
+	name := strings.TrimSpace(s.Name)
+	var buf bytes.Buffer
+	for _, r := range name {
+		buf.WriteRune(r)
+		buf.WriteRune(' ')
+	}
+
 	t := Target{
-		name:   s.Name,
-		id:     s.ID,
-		link:   link,
-		urlKey: s.LiveRoom.URLKey,
+		name:    name,
+		display: buf.String(),
+		id:      s.ID,
+		link:    link,
+		urlKey:  s.LiveRoom.URLKey,
 	}
 
 	err = track.AddTarget(t)
@@ -93,10 +103,11 @@ func RemoveTargetFromURL(link string) (bool, error) {
 // Target showroom streamer
 type Target struct {
 	// info
-	name   string
-	id     int
-	link   string
-	urlKey string
+	name    string
+	display string
+	id      int
+	link    string
+	urlKey  string
 }
 
 // BeginSnipe callback
@@ -117,9 +128,9 @@ func (t Target) EndSave(err error) {
 	return
 }
 
-// Name is the streamers real name
+// Name is the streamers real name for display in dashboard
 func (t Target) Name() string {
-	return t.name
+	return t.display
 }
 
 // Link is url string where this user's streams can be found
