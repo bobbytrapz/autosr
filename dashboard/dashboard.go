@@ -137,6 +137,7 @@ func layout(g *gocui.Gui) error {
 			if len(res.Tracking) > 0 {
 				fmt.Fprintf(tw, "STATUS\tNAME\tURL\n")
 			} else {
+				fmt.Fprintln(tw, "Written by Bobby. (@pibisubukebe)")
 				fmt.Fprintln(tw, "use 'autosr track' to add targets.")
 				fmt.Fprintln(tw, "For help visit: https://github.com/bobbytrapz/autosr")
 			}
