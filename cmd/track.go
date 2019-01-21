@@ -28,14 +28,12 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var trackListEditor string
 var shouldDump bool
 
 const trackListFileName = "track.list"
 
 func init() {
 	rootCmd.AddCommand(trackCmd)
-	trackCmd.LocalFlags().StringVarP(&trackListEditor, "editor", "e", os.Getenv("EDITOR"), "Command to use for editing.")
 	trackCmd.Flags().BoolVarP(&shouldDump, "dump", "d", false, "Dump track list")
 }
 
@@ -101,9 +99,14 @@ When you change this file the tracked targets are updated right away.
 			appArgs = []string{app, "/W", fn}
 		default:
 			// assume unix system
-			app, err = exec.LookPath(trackListEditor)
+			editor := os.Getenv("EDITOR")
+			if editor == "" {
+				fmt.Println("You need to the $EDITOR flag.", err)
+				return
+			}
+			app, err = exec.LookPath(editor)
 			if err != nil {
-				fmt.Println("error: could not find", trackListEditor, err)
+				fmt.Println("error: could not find", app, err)
 				return
 			}
 			appArgs = []string{app, fn}
