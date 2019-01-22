@@ -264,6 +264,9 @@ func moveUp(g *gocui.Gui, v *gocui.View) error {
 			return err
 		}
 	}
+	if l, err := v.Line(cy - 1); err == nil && strings.TrimSpace(l) == "" {
+		return moveUp(g, v)
+	}
 	readURL(g, v)
 
 	return nil
@@ -285,6 +288,9 @@ func moveDown(g *gocui.Gui, v *gocui.View) error {
 			debug(fmt.Sprintf("origin: %d %d", ox, oy+1))
 			return err
 		}
+	}
+	if l, err := v.Line(cy + 1); err == nil && strings.TrimSpace(l) == "" {
+		return moveDown(g, v)
 	}
 	readURL(g, v)
 
