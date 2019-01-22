@@ -18,6 +18,7 @@ package dashboard
 import (
 	"fmt"
 	"net/rpc"
+	"strings"
 	"sync"
 	"text/tabwriter"
 	"time"
@@ -100,75 +101,102 @@ func redraw(g *gocui.Gui) {
 	}
 
 	g.Update(func(g *gocui.Gui) error {
-		g.DeleteView("home")
-		layout(g)
+		if v := g.CurrentView(); v != nil {
+			switch v.Name() {
+			case "target-list":
+				drawTargetList(v)
+			}
+		}
+
 		return nil
 	})
 }
 
-func layout(g *gocui.Gui) error {
+func drawLogo(v *gocui.View) {
+	v.Clear()
 
-	{
-		w, h := g.Size()
-		if v, err := g.SetView("home", -1, -1, w, h); err != nil {
-			if err != gocui.ErrUnknownView {
-				return err
-			}
+	if shouldColorLogo {
+		fmt.Fprintln(v, colorLogo)
+	} else {
+		fmt.Fprintln(v, logo)
+	}
+}
 
-			v.Highlight = true
-			v.Autoscroll = true
+func drawTargetList(v *gocui.View) {
+	v.Clear()
 
-			if shouldColorLogo {
-				fmt.Fprintln(v, colorLogo)
-			} else {
-				fmt.Fprintln(v, logo)
-			}
+	numLive := len(res.Tracking.Live)
+	numUpcoming := len(res.Tracking.Upcoming)
+	numOffLine := len(res.Tracking.OffLine)
 
-			numLive := len(res.Tracking.Live)
-			numUpcoming := len(res.Tracking.Upcoming)
-			numOffLine := len(res.Tracking.OffLine)
+	tw := tabwriter.NewWriter(v, 0, 0, 4, ' ', 0)
+	if numLive > 0 || numUpcoming > 0 || numOffLine > 0 {
+		fmt.Fprintf(tw, "STATUS\tNAME\tURL\n")
+	} else {
+		fmt.Fprintln(v, "Written by Bobby. (@pibisubukebe)")
+		fmt.Fprintln(v, "use 'autosr track' to add targets.")
+		fmt.Fprintln(v, "For help visit: https://github.com/bobbytrapz/autosr")
 
-			tw := tabwriter.NewWriter(v, 0, 0, 4, ' ', 0)
-			if numLive > 0 || numUpcoming > 0 || numOffLine > 0 {
-				fmt.Fprintf(tw, "STATUS\tNAME\tURL\n")
-			} else {
-				fmt.Fprintln(v, "Written by Bobby. (@pibisubukebe)")
-				fmt.Fprintln(v, "use 'autosr track' to add targets.")
-				fmt.Fprintln(v, "For help visit: https://github.com/bobbytrapz/autosr")
-				return nil
-			}
+		return
+	}
 
-			for _, t := range res.Tracking.Live {
-				at := t.StartedAt.Format(time.Kitchen)
-				status := fmt.Sprintf("Now (%s)", at)
-				fmt.Fprintf(tw, "%s\t%s\t%s\n", status, t.Name, t.Link)
-			}
-			if numLive > 0 {
-				fmt.Fprintln(tw, "\t\t\t")
-			}
+	for _, t := range res.Tracking.Live {
+		at := t.StartedAt.Format(time.Kitchen)
+		status := fmt.Sprintf("Now (%s)", at)
+		fmt.Fprintf(tw, "%s\t%s\t%s\n", status, t.Name, t.Link)
+	}
+	if numLive > 0 {
+		fmt.Fprintln(tw, "\t\t\t")
+	}
 
-			for _, t := range res.Tracking.Upcoming {
-				var status string
-				at := time.Until(t.UpcomingAt).Truncate(time.Second)
-				if at > time.Second {
-					status = fmt.Sprintf("Soon (%s)", at)
-				} else {
-					status = "Soon"
-				}
-				fmt.Fprintf(tw, "%s\t%s\t%s\n", status, t.Name, t.Link)
-
-			}
-			if numUpcoming > 0 {
-				fmt.Fprintln(tw, "\t\t\t")
-			}
-
-			for _, t := range res.Tracking.OffLine {
-				status := "Offline"
-				fmt.Fprintf(tw, "%s\t%s\t%s\n", status, t.Name, t.Link)
-			}
-
-			tw.Flush()
+	for _, t := range res.Tracking.Upcoming {
+		var status string
+		at := time.Until(t.UpcomingAt).Truncate(time.Second)
+		if at > time.Second {
+			status = fmt.Sprintf("Soon (%s)", at)
+		} else {
+			status = "Soon"
 		}
+		fmt.Fprintf(tw, "%s\t%s\t%s\n", status, t.Name, t.Link)
+
+	}
+	if numUpcoming > 0 {
+		fmt.Fprintln(tw, "\t\t\t")
+	}
+
+	for _, t := range res.Tracking.OffLine {
+		status := "Offline"
+		fmt.Fprintf(tw, "%s\t%s\t%s\n", status, t.Name, t.Link)
+	}
+
+	tw.Flush()
+}
+
+func layout(g *gocui.Gui) error {
+	logoHeight := 3
+	w, h := g.Size()
+	if v, err := g.SetView("logo", -1, -1, w, logoHeight); err != nil {
+		if err != gocui.ErrUnknownView {
+			return err
+		}
+
+		drawLogo(v)
+	}
+
+	if v, err := g.SetView("target-list", -1, logoHeight, w, h); err != nil {
+		if err != gocui.ErrUnknownView {
+			return err
+		}
+
+		v.Highlight = true
+		v.SelBgColor = gocui.ColorGreen
+		v.SelFgColor = gocui.ColorBlack
+
+		drawTargetList(v)
+	}
+
+	if _, err := g.SetCurrentView("target-list"); err != nil {
+		return err
 	}
 
 	return nil
@@ -188,21 +216,21 @@ func keys(g *gocui.Gui) (err error) {
 		return
 	}
 
-	// select
-	if err = g.SetKeybinding("", gocui.KeyArrowUp, gocui.ModNone, quit); err != nil {
+	// cursor select
+	if err = g.SetKeybinding("target-list", gocui.KeyArrowUp, gocui.ModNone, moveUp); err != nil {
 		return
 	}
 
-	if err = g.SetKeybinding("", gocui.KeyArrowDown, gocui.ModNone, quit); err != nil {
+	if err = g.SetKeybinding("target-list", gocui.KeyArrowDown, gocui.ModNone, moveDown); err != nil {
 		return
 	}
 
 	// command
-	if err = g.SetKeybinding("", 'c', gocui.ModNone, cancelTarget); err != nil {
+	if err = g.SetKeybinding("target-list", 'c', gocui.ModNone, cancelTarget); err != nil {
 		return
 	}
 
-	if err = g.SetKeybinding("", 'r', gocui.ModNone, reloadTargets); err != nil {
+	if err = g.SetKeybinding("target-list", 'r', gocui.ModNone, reloadTargets); err != nil {
 		return
 	}
 
@@ -221,6 +249,55 @@ func call(method string) error {
 
 func quit(g *gocui.Gui, v *gocui.View) error {
 	return gocui.ErrQuit
+}
+
+const topRow = 5
+
+func moveUp(g *gocui.Gui, v *gocui.View) error {
+	if v == nil {
+		return nil
+	}
+
+	ox, oy := v.Origin()
+	cx, cy := v.Cursor()
+	if err := v.SetCursor(cx, cy-1); err != nil && oy > 0 {
+		if err := v.SetOrigin(ox, oy-1); err != nil {
+			return err
+		}
+	}
+	readURL(g, v)
+
+	return nil
+}
+
+func moveDown(g *gocui.Gui, v *gocui.View) error {
+	if v == nil {
+		return nil
+	}
+
+	cx, cy := v.Cursor()
+	if err := v.SetCursor(cx, cy+1); err != nil {
+		ox, oy := v.Origin()
+		if err := v.SetOrigin(ox, oy+1); err != nil {
+			return err
+		}
+	}
+	readURL(g, v)
+
+	return nil
+}
+
+func readURL(g *gocui.Gui, v *gocui.View) error {
+	_, cy := v.Cursor()
+	if line, err := v.Line(cy); err == nil {
+		sp := strings.Split(line, " ")
+		if len(sp) == 3 {
+			req.SelectURL = sp[2]
+			println(sp[2])
+		}
+	}
+
+	return nil
 }
 
 func cancelTarget(g *gocui.Gui, v *gocui.View) error {
