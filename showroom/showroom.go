@@ -62,9 +62,9 @@ func Wait() {
 
 var targets = make([]Target, 0)
 
-func update() error {
+func check() error {
 	if len(targets) == 0 {
-		fmt.Println("showroom.update: no targets")
+		fmt.Println("showroom.check: no targets")
 		return nil
 	}
 
@@ -82,7 +82,7 @@ func update() error {
 			isLive, err := checkIsLive(t.id)
 			if err == nil && isLive {
 				if err = track.SnipeTargetAt(t, time.Now()); err != nil {
-					log.Println("showroom.update:", err)
+					log.Println("showroom.check:", err)
 				}
 				return
 			}
@@ -96,11 +96,11 @@ func update() error {
 					isLive, err = e.Retry()
 					if err == nil && isLive {
 						if err = track.SnipeTargetAt(t, time.Now()); err != nil {
-							log.Println("showroom.update:", err)
+							log.Println("showroom.check:", err)
 						}
 					}
 				case <-timeout.C:
-					log.Println("showroom.update:", t.name, "timeout")
+					log.Println("showroom.check:", t.name, "timeout")
 					return
 				}
 			}
@@ -122,7 +122,7 @@ func Start(ctx context.Context) (err error) {
 		return
 	}
 
-	if err = track.Poll(ctx, update); err != nil {
+	if err = track.Poll(ctx, check); err != nil {
 		err = fmt.Errorf("showroom.Start: %s", err)
 		return
 	}
