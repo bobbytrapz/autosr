@@ -17,6 +17,7 @@ package ipc
 
 import (
 	"fmt"
+	"log"
 
 	"github.com/bobbytrapz/autosr/track"
 )
@@ -24,6 +25,7 @@ import (
 // CheckNow forces a poll attempt
 func (c *Command) CheckNow(req *Dashboard, res *Dashboard) error {
 	replicate(req, res)
+	log.Println("ipc.CheckNow")
 	track.CheckNow()
 	return nil
 }
