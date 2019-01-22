@@ -66,7 +66,7 @@ func (t *tracked) SetCancel(c context.CancelFunc) {
 
 // IsUpcoming is true if the target has a known upcoming time
 func (t *tracked) IsUpcoming() bool {
-	return !t.upcomingAt.IsZero()
+	return time.Until(t.upcomingAt) > 0
 }
 
 // IsLive is true if the target is live
@@ -77,6 +77,11 @@ func (t *tracked) IsLive() bool {
 // IsFinished is true if the target stream has ended
 func (t *tracked) IsFinished() bool {
 	return !t.finishedAt.IsZero()
+}
+
+// IsOffLine is true when the stream is not live and we do not when it will be live
+func (t *tracked) IsOffLine() bool {
+	return !t.IsLive() && !t.IsUpcoming()
 }
 
 // Status for tracked streamer
@@ -218,25 +223,55 @@ func getTracked(link string) (tracked *tracked, err error) {
 	return
 }
 
+// Display tracking data
+type Display struct {
+	Live     []Info
+	Upcoming []Info
+	OffLine  []Info
+}
+
 // ListTracking gives everyone we are tracking sorted by urgency
-func ListTracking() []Info {
+func ListTracking() (d Display) {
 	m.RLock()
 	defer m.RUnlock()
 
-	var lst []Info
 	for _, t := range tracking {
-		lst = append(lst, Info{
-			Name:       t.Target.Display(),
-			Link:       t.Target.Link(),
-			UpcomingAt: t.upcomingAt,
-			StartedAt:  t.startedAt,
-			FinishedAt: t.finishedAt,
-		})
+		if t.IsLive() {
+			d.Live = append(d.Live, Info{
+				Name:       t.Target.Display(),
+				Link:       t.Target.Link(),
+				UpcomingAt: t.upcomingAt,
+				StartedAt:  t.startedAt,
+				FinishedAt: t.finishedAt,
+			})
+		}
+
+		if t.IsUpcoming() {
+			d.Upcoming = append(d.Upcoming, Info{
+				Name:       t.Target.Display(),
+				Link:       t.Target.Link(),
+				UpcomingAt: t.upcomingAt,
+				StartedAt:  t.startedAt,
+				FinishedAt: t.finishedAt,
+			})
+		}
+
+		if t.IsOffLine() {
+			d.OffLine = append(d.OffLine, Info{
+				Name:       t.Target.Display(),
+				Link:       t.Target.Link(),
+				UpcomingAt: t.upcomingAt,
+				StartedAt:  t.startedAt,
+				FinishedAt: t.finishedAt,
+			})
+		}
 	}
 
-	sort.Sort(byUrgency(lst))
+	sort.Sort(byUrgency(d.Live))
+	sort.Sort(byUrgency(d.Upcoming))
+	sort.Sort(byUrgency(d.OffLine))
 
-	return lst
+	return
 }
 
 // ListPath to list of urls to watch

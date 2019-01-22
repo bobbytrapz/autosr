@@ -22,7 +22,7 @@ import (
 // Dashboard represents a connected dashboard
 type Dashboard struct {
 	SelectURL string
-	Tracking  []track.Info
+	Tracking  track.Display
 }
 
 var status Dashboard
@@ -34,9 +34,13 @@ func replicate(req *Dashboard, res *Dashboard) {
 		status.SelectURL = req.SelectURL
 	}
 
-	lst := track.ListTracking()
-	res.Tracking = make([]track.Info, len(lst))
-	copy(res.Tracking, lst)
+	d := track.ListTracking()
+	res.Tracking.Live = make([]track.Info, len(d.Live))
+	copy(res.Tracking.Live, d.Live)
+	res.Tracking.Upcoming = make([]track.Info, len(d.Upcoming))
+	copy(res.Tracking.Upcoming, d.Upcoming)
+	res.Tracking.OffLine = make([]track.Info, len(d.OffLine))
+	copy(res.Tracking.OffLine, d.OffLine)
 }
 
 // Status for the dashboard

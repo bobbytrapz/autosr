@@ -93,23 +93,15 @@ func Run(bColor bool) {
 }
 
 func redraw(g *gocui.Gui) {
-	m.Lock()
-	if err := remote.Call("Command.Status", req, &res); err != nil {
-		// poll was not successful so close dashboard
+	if err := call("Status"); err != nil {
 		g.Update(func(g *gocui.Gui) error {
 			return gocui.ErrQuit
 		})
-
-		m.Unlock()
-		return
 	}
-	m.Unlock()
 
-	// poll was successful so redraw
 	g.Update(func(g *gocui.Gui) error {
 		g.DeleteView("home")
 		layout(g)
-
 		return nil
 	})
 }
@@ -124,7 +116,6 @@ func layout(g *gocui.Gui) error {
 			}
 
 			v.Highlight = true
-			v.Wrap = true
 			v.Autoscroll = true
 
 			if shouldColorLogo {
@@ -133,38 +124,49 @@ func layout(g *gocui.Gui) error {
 				fmt.Fprintln(v, logo)
 			}
 
+			numLive := len(res.Tracking.Live)
+			numUpcoming := len(res.Tracking.Upcoming)
+			numOffLine := len(res.Tracking.OffLine)
+
 			tw := tabwriter.NewWriter(v, 0, 0, 4, ' ', 0)
-			if len(res.Tracking) > 0 {
+			if numLive > 0 || numUpcoming > 0 || numOffLine > 0 {
 				fmt.Fprintf(tw, "STATUS\tNAME\tURL\n")
 			} else {
-				fmt.Fprintln(tw, "Written by Bobby. (@pibisubukebe)")
-				fmt.Fprintln(tw, "use 'autosr track' to add targets.")
-				fmt.Fprintln(tw, "For help visit: https://github.com/bobbytrapz/autosr")
+				fmt.Fprintln(v, "Written by Bobby. (@pibisubukebe)")
+				fmt.Fprintln(v, "use 'autosr track' to add targets.")
+				fmt.Fprintln(v, "For help visit: https://github.com/bobbytrapz/autosr")
+				return nil
 			}
-			var nowSep sync.Once
-			var soonSep sync.Once
-			sepFn := func() {
-				fmt.Fprintln(tw, "\t\t\t")
-			}
-			for _, t := range res.Tracking {
-				var status string
-				if t.IsLive() {
-					at := t.StartedAt.Format(time.Kitchen)
-					status = fmt.Sprintf("Now (%s)", at)
-				} else if t.IsUpcoming() {
-					nowSep.Do(sepFn)
-					at := time.Until(t.UpcomingAt).Truncate(time.Second)
-					if at > time.Second {
-						status = fmt.Sprintf("Soon (%s)", at)
-					} else {
-						status = "Soon"
-					}
-				} else {
-					soonSep.Do(sepFn)
-					status = "Offline"
-				}
+
+			for _, t := range res.Tracking.Live {
+				at := t.StartedAt.Format(time.Kitchen)
+				status := fmt.Sprintf("Now (%s)", at)
 				fmt.Fprintf(tw, "%s\t%s\t%s\n", status, t.Name, t.Link)
 			}
+			if numLive > 0 {
+				fmt.Fprintln(tw, "\t\t\t")
+			}
+
+			for _, t := range res.Tracking.Upcoming {
+				var status string
+				at := time.Until(t.UpcomingAt).Truncate(time.Second)
+				if at > time.Second {
+					status = fmt.Sprintf("Soon (%s)", at)
+				} else {
+					status = "Soon"
+				}
+				fmt.Fprintf(tw, "%s\t%s\t%s\n", status, t.Name, t.Link)
+
+			}
+			if numUpcoming > 0 {
+				fmt.Fprintln(tw, "\t\t\t")
+			}
+
+			for _, t := range res.Tracking.OffLine {
+				status := "Offline"
+				fmt.Fprintf(tw, "%s\t%s\t%s\n", status, t.Name, t.Link)
+			}
+
 			tw.Flush()
 		}
 	}
@@ -173,6 +175,7 @@ func layout(g *gocui.Gui) error {
 }
 
 func keys(g *gocui.Gui) (err error) {
+	// quit
 	if err = g.SetKeybinding("", 'q', gocui.ModNone, quit); err != nil {
 		return
 	}
@@ -185,15 +188,55 @@ func keys(g *gocui.Gui) (err error) {
 		return
 	}
 
-	if err = g.SetKeybinding("", gocui.KeyEnter, gocui.ModNone, selectURL); err != nil {
+	// select
+	if err = g.SetKeybinding("", gocui.KeyArrowUp, gocui.ModNone, quit); err != nil {
+		return
+	}
+
+	if err = g.SetKeybinding("", gocui.KeyArrowDown, gocui.ModNone, quit); err != nil {
+		return
+	}
+
+	// command
+	if err = g.SetKeybinding("", 'c', gocui.ModNone, cancelTarget); err != nil {
+		return
+	}
+
+	if err = g.SetKeybinding("", 'r', gocui.ModNone, reloadTargets); err != nil {
 		return
 	}
 
 	return
 }
 
+func call(method string) error {
+	m.Lock()
+	defer m.Unlock()
+	if err := remote.Call("Command."+method, req, &res); err != nil {
+		return fmt.Errorf("dashboard.call: %s", err)
+	}
+
+	return nil
+}
+
 func quit(g *gocui.Gui, v *gocui.View) error {
 	return gocui.ErrQuit
+}
+
+func cancelTarget(g *gocui.Gui, v *gocui.View) error {
+	if err := call("Cancel"); err != nil {
+		return fmt.Errorf("dashboard.cancelTarget: %s", err)
+	}
+	redraw(g)
+	return nil
+}
+
+func reloadTargets(g *gocui.Gui, v *gocui.View) error {
+	if err := call("CheckNow"); err != nil {
+		return fmt.Errorf("dashboard.reloadTargets: %s", err)
+	}
+	redraw(g)
+	return nil
 }
 
 func selectURL(g *gocui.Gui, v *gocui.View) error {
