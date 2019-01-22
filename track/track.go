@@ -44,7 +44,7 @@ func Wait() {
 
 type tracked struct {
 	sync.RWMutex
-	Target Target
+	target Target
 	cancel context.CancelFunc
 
 	// schelduling
@@ -54,6 +54,64 @@ type tracked struct {
 
 	// recording
 	streamURL string
+}
+
+func (t *tracked) Name() string {
+	t.RLock()
+	defer t.RUnlock()
+	if t.target == nil {
+		return ""
+	}
+
+	return t.target.Name()
+}
+
+func (t *tracked) Link() string {
+	t.RLock()
+	defer t.RUnlock()
+	if t.target == nil {
+		return ""
+	}
+
+	return t.target.Link()
+}
+
+func (t *tracked) BeginSnipe() {
+	t.RLock()
+	defer t.RUnlock()
+	if t.target == nil {
+		return
+	}
+
+	t.target.BeginSnipe()
+}
+
+func (t *tracked) BeginSave() {
+	t.RLock()
+	defer t.RUnlock()
+	if t.target == nil {
+		return
+	}
+
+	t.target.BeginSave()
+}
+
+func (t *tracked) EndSave(err error) {
+	t.RLock()
+	defer t.RUnlock()
+	if t.target == nil {
+		return
+	}
+
+	t.target.EndSave(err)
+}
+
+func (t *tracked) Check() (string, error) {
+	if t.target != nil {
+		return t.target.Check()
+	}
+
+	return "", errors.New("target is nil")
 }
 
 func (t *tracked) Cancel() {
@@ -72,7 +130,7 @@ func (t *tracked) SetCancel(c context.CancelFunc) {
 
 // IsUpcoming is true if the target has a known upcoming time
 func (t *tracked) IsUpcoming() bool {
-	return time.Until(t.upcomingAt) > 0
+	return time.Until(t.UpcomingAt()) > 0
 }
 
 // IsLive is true if the target is live
@@ -100,7 +158,7 @@ func AddTarget(target Target) error {
 	}
 
 	tracking[target.Link()] = &tracked{
-		Target: target,
+		target: target,
 	}
 
 	return nil

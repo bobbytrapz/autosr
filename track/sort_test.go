@@ -86,13 +86,13 @@ func TestSort(t *testing.T) {
 	{
 		got := []*tracked{
 			&tracked{
-				Target: a,
+				target: a,
 			},
 			&tracked{
-				Target: b,
+				target: b,
 			},
 			&tracked{
-				Target: c,
+				target: c,
 			},
 		}
 
@@ -100,19 +100,19 @@ func TestSort(t *testing.T) {
 		// lexagraphical order is the fallback
 		want := []*tracked{
 			&tracked{
-				Target: c,
+				target: c,
 			},
 			&tracked{
-				Target: a,
+				target: a,
 			},
 			&tracked{
-				Target: b,
+				target: b,
 			},
 		}
 
 		for ndx := range got {
-			if want[ndx].Target.Name() != got[ndx].Target.Name() {
-				t.Error("want", want[ndx].Target.Name(), "got", got[ndx].Target.Name())
+			if want[ndx].Name() != got[ndx].Name() {
+				t.Error("want", want[ndx].Name(), "got", got[ndx].Name())
 			}
 		}
 	}
@@ -120,13 +120,13 @@ func TestSort(t *testing.T) {
 	{
 		got := []*tracked{
 			&tracked{
-				Target: a,
+				target: a,
 			},
 			&tracked{
-				Target: b,
+				target: b,
 			},
 			&tracked{
-				Target: c,
+				target: c,
 			},
 		}
 		got[1].SetStartedAt(time.Now())
@@ -135,19 +135,19 @@ func TestSort(t *testing.T) {
 
 		want := []*tracked{
 			&tracked{
-				Target: b,
+				target: b,
 			},
 			&tracked{
-				Target: c,
+				target: c,
 			},
 			&tracked{
-				Target: a,
+				target: a,
 			},
 		}
 
 		for ndx := range got {
-			if want[ndx].Target.Name() != got[ndx].Target.Name() {
-				t.Error("want", want[ndx].Target.Name(), "got", got[ndx].Target.Name())
+			if want[ndx].Name() != got[ndx].Name() {
+				t.Error("want", want[ndx].Name(), "got", got[ndx].Name())
 			}
 		}
 	}

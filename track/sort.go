@@ -50,5 +50,5 @@ func (s byUrgency) Less(a, b int) bool {
 		return s[a].UpcomingAt().Before(s[b].UpcomingAt())
 	}
 
-	return s[a].Target.Name() < s[b].Target.Name()
+	return s[a].Name() < s[b].Name()
 }

@@ -63,9 +63,11 @@ func delSave(link string) {
 
 // Save recording of a stream to disk
 func Save(ctx context.Context, tracked *tracked) error {
-	link := tracked.Target.Link()
+	name := tracked.Name()
+
+	link := tracked.Link()
 	if link == "" {
-		return errors.New("track.Save: no url")
+		return errors.New("track.Save: no link")
 	}
 
 	url := tracked.StreamURL()
@@ -74,14 +76,14 @@ func Save(ctx context.Context, tracked *tracked) error {
 	}
 
 	if !addSave(link) {
-		log.Println("track.Save:", tracked.Target.Name(), "already saving")
+		log.Println("track.Save:", name, "already saving")
 		return nil
 	}
 
 	tracked.SetStartedAt(time.Now())
-	tracked.Target.BeginSave()
+	tracked.BeginSave()
 
-	cmd, err := RunDownloader(ctx, url, tracked.Target.Name())
+	cmd, err := RunDownloader(ctx, url, name)
 	if err != nil {
 		return fmt.Errorf("track.Save: %s", err)
 	}
@@ -95,12 +97,13 @@ func Save(ctx context.Context, tracked *tracked) error {
 		for {
 			select {
 			case <-ctx.Done():
-				log.Printf("track.Save: %s canceled [%s %d]", tracked.Target.Name(), cmd.Args[0], cmd.Process.Pid)
+				log.Printf("track.Save: %s canceled [%s %d]", name, cmd.Args[0], cmd.Process.Pid)
 				// stop saving now
-				delSave(tracked.Target.Link())
-				cmd.Process.Kill()
+				delSave(link)
+				tracked.EndSave(nil)
 				tracked.SetFinishedAt(time.Now())
-				tracked.Target.EndSave(nil)
+				cmd.Process.Kill()
+
 				return
 			case <-exit:
 				// something may have gone wrong so try again right now
@@ -113,13 +116,13 @@ func Save(ctx context.Context, tracked *tracked) error {
 	if err := cmd.Start(); err != nil {
 		return fmt.Errorf("track.Save: %s", err)
 	}
-	log.Printf("track.Save: %s [%s %d]", tracked.Target.Name(), cmd.Args[0], cmd.Process.Pid)
+	log.Printf("track.Save: %s [%s %d]", name, cmd.Args[0], cmd.Process.Pid)
 
 	// monitor downloader
 	go func() {
 		defer close(exit)
 		err := cmd.Wait()
-		log.Printf("track.Save: %s done [%s %d] (%s)", tracked.Target.Name(), cmd.Args[0], cmd.Process.Pid, err)
+		log.Printf("track.Save: %s done [%s %d] (%s)", name, cmd.Args[0], cmd.Process.Pid, err)
 	}()
 
 	return nil
