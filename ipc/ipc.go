@@ -37,7 +37,7 @@ var server *http.Server
 func Start() {
 	addr := options.Get("listen_on")
 
-	c := new(Command)
+	c := &Command{}
 	rpc.Register(c)
 	rpc.HandleHTTP()
 
