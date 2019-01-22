@@ -36,6 +36,8 @@ var res ipc.Dashboard
 
 var shouldColorLogo = false
 
+var logoHeight = 2
+
 // smbraille
 var logo = `
  ⢀⣀ ⡀⢀ ⣰⡀ ⢀⡀ ⢀⣀ ⡀⣀
@@ -122,9 +124,9 @@ func drawLogo(v *gocui.View) {
 	v.Clear()
 
 	if shouldColorLogo {
-		fmt.Fprintln(v, colorLogo)
+		fmt.Fprintf(v, colorLogo)
 	} else {
-		fmt.Fprintln(v, logo)
+		fmt.Fprintf(v, logo)
 	}
 }
 
@@ -135,19 +137,15 @@ func drawTargetList(v *gocui.View) {
 
 	numLive := len(res.TrackTable.Live)
 	numUpcoming := len(res.TrackTable.Upcoming)
-	numOffLine := len(res.TrackTable.Offline)
 
 	tw := tabwriter.NewWriter(v, 0, 0, 4, ' ', 0)
-	if numLive > 0 || numUpcoming > 0 || numOffLine > 0 {
-		fmt.Fprintf(tw, "STATUS\tNAME\tURL\n")
-	} else {
+	if numRows() == 0 {
 		fmt.Fprintln(v, "Written by Bobby. (@pibisubukebe)")
 		fmt.Fprintln(v, "use 'autosr track' to add targets.")
 		fmt.Fprintln(v, "For help visit: https://github.com/bobbytrapz/autosr")
 
 		return
 	}
-
 	v.SelBgColor = gocui.ColorGreen
 	v.SelFgColor = gocui.ColorBlack
 
@@ -173,7 +171,6 @@ func drawTargetList(v *gocui.View) {
 }
 
 func layout(g *gocui.Gui) error {
-	logoHeight := 3
 	w, h := g.Size()
 	if v, err := g.SetView("logo", -1, -1, w, logoHeight); err != nil {
 		if err != gocui.ErrUnknownView {
@@ -189,7 +186,6 @@ func layout(g *gocui.Gui) error {
 		}
 
 		v.Highlight = true
-		v.SetCursor(0, 1)
 
 		drawTargetList(v)
 	}
@@ -261,9 +257,6 @@ func moveUp(g *gocui.Gui, v *gocui.View) error {
 
 	ox, oy := v.Origin()
 	cx, cy := v.Cursor()
-	if cy-1 <= 0 {
-		return nil
-	}
 	debug(fmt.Sprintf("cursor: %d %d", cx, cy-1))
 	if err := v.SetCursor(cx, cy-1); err != nil && oy > 0 {
 		if err := v.SetOrigin(ox, oy-1); err != nil {
@@ -281,13 +274,13 @@ func moveDown(g *gocui.Gui, v *gocui.View) error {
 		return nil
 	}
 
+	ox, oy := v.Origin()
 	cx, cy := v.Cursor()
-	if cy+1 >= numRows()+1 {
+	if oy+cy+1 >= numRows()+1 {
 		return nil
 	}
 	debug(fmt.Sprintf("cursor: %d %d", cx, cy+1))
 	if err := v.SetCursor(cx, cy+1); err != nil {
-		ox, oy := v.Origin()
 		if err := v.SetOrigin(ox, oy+1); err != nil {
 			debug(fmt.Sprintf("origin: %d %d", ox, oy+1))
 			return err
@@ -314,7 +307,7 @@ func readURL(g *gocui.Gui, v *gocui.View) error {
 }
 
 func cancelTarget(g *gocui.Gui, v *gocui.View) error {
-	if err := call("Cancel"); err != nil {
+	if err := call("CancelTarget"); err != nil {
 		return fmt.Errorf("dashboard.cancelTarget: %s", err)
 	}
 	redraw(g)
