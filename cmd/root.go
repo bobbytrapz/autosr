@@ -120,7 +120,7 @@ Details can be found at https://github.com/bobbytrapz/autosr/LICENSE.
 		defer ipc.Stop()
 
 		// start showroom
-		showroom.Start()
+		showroom.Start(ctx)
 		defer showroom.Stop()
 
 		// wait for all tracking related tasks to complete
@@ -129,6 +129,7 @@ Details can be found at https://github.com/bobbytrapz/autosr/LICENSE.
 		// handle interrupt
 		sig := make(chan os.Signal, 1)
 		signal.Notify(sig, os.Interrupt)
+		signal.Notify(sig, os.Kill)
 
 		for {
 			select {

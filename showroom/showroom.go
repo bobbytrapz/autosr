@@ -113,13 +113,9 @@ func check() error {
 }
 
 // Start showroom module
-func Start() (err error) {
-	ctx := context.Background()
-	ctx, cancel := context.WithCancel(ctx)
+func Start(ctx context.Context) (err error) {
 	go func() {
 		<-shutdown
-		// cancel poll
-		cancel()
 		log.Println("showroom.Stop: finishing...")
 		wg.Wait()
 		log.Println("showroom.Stop: done")
