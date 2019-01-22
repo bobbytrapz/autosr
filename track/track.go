@@ -19,27 +19,26 @@ import (
 	"context"
 	"errors"
 	"path/filepath"
-	"sort"
 	"sync"
 	"time"
 
 	"github.com/bobbytrapz/autosr/options"
 )
 
-type status int
+var m sync.RWMutex
+var tracking = make(map[string]*tracked)
 
-const (
-	_ = iota
-	sleeping
-	sniping
-	saving
-)
+var wg sync.WaitGroup
+
+// Wait for tracking tasks to finish
+func Wait() {
+	wg.Wait()
+}
 
 type tracked struct {
 	sync.RWMutex
 	Target Target
 	cancel context.CancelFunc
-	status status
 
 	// schelduling
 	upcomingAt time.Time
@@ -71,41 +70,17 @@ func (t *tracked) IsUpcoming() bool {
 
 // IsLive is true if the target is live
 func (t *tracked) IsLive() bool {
-	return !t.startedAt.IsZero() && t.finishedAt.IsZero()
+	return !t.StartedAt().IsZero() && t.StartedAt().After(t.FinishedAt())
 }
 
 // IsFinished is true if the target stream has ended
 func (t *tracked) IsFinished() bool {
-	return !t.finishedAt.IsZero()
+	return !t.FinishedAt().IsZero() && t.StartedAt().Before(t.FinishedAt())
 }
 
-// IsOffLine is true when the stream is not live and we do not when it will be live
-func (t *tracked) IsOffLine() bool {
+// IsOffline is true when the stream is not live and we do not when it will be live
+func (t *tracked) IsOffline() bool {
 	return !t.IsLive() && !t.IsUpcoming()
-}
-
-// Status for tracked streamer
-func (t *tracked) Status() status {
-	t.RLock()
-	defer t.RUnlock()
-	return t.status
-}
-
-// SetStatus for tracked streamer
-func (t *tracked) SetStatus(s status) {
-	t.Lock()
-	defer t.Unlock()
-	t.status = s
-}
-
-var m sync.RWMutex
-var tracking = make(map[string]*tracked)
-
-var wg sync.WaitGroup
-
-// Wait for tracking tasks to finish
-func Wait() {
-	wg.Wait()
 }
 
 // AddTarget for tracking
@@ -119,7 +94,6 @@ func AddTarget(target Target) error {
 
 	tracking[target.Link()] = &tracked{
 		Target: target,
-		status: sleeping,
 	}
 
 	return nil
@@ -219,57 +193,6 @@ func getTracked(link string) (tracked *tracked, err error) {
 		err = errors.New("track.GetTarget: we are not tracking this target")
 		return
 	}
-
-	return
-}
-
-// Display tracking data
-type Display struct {
-	Live     []Info
-	Upcoming []Info
-	OffLine  []Info
-}
-
-// ListTracking gives everyone we are tracking sorted by urgency
-func ListTracking() (d Display) {
-	m.RLock()
-	defer m.RUnlock()
-
-	for _, t := range tracking {
-		if t.IsLive() {
-			d.Live = append(d.Live, Info{
-				Name:       t.Target.Display(),
-				Link:       t.Target.Link(),
-				UpcomingAt: t.upcomingAt,
-				StartedAt:  t.startedAt,
-				FinishedAt: t.finishedAt,
-			})
-		}
-
-		if t.IsUpcoming() {
-			d.Upcoming = append(d.Upcoming, Info{
-				Name:       t.Target.Display(),
-				Link:       t.Target.Link(),
-				UpcomingAt: t.upcomingAt,
-				StartedAt:  t.startedAt,
-				FinishedAt: t.finishedAt,
-			})
-		}
-
-		if t.IsOffLine() {
-			d.OffLine = append(d.OffLine, Info{
-				Name:       t.Target.Display(),
-				Link:       t.Target.Link(),
-				UpcomingAt: t.upcomingAt,
-				StartedAt:  t.startedAt,
-				FinishedAt: t.finishedAt,
-			})
-		}
-	}
-
-	sort.Sort(byUrgency(d.Live))
-	sort.Sort(byUrgency(d.Upcoming))
-	sort.Sort(byUrgency(d.OffLine))
 
 	return
 }

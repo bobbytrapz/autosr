@@ -15,40 +15,7 @@
 
 package track
 
-import (
-	"time"
-)
-
-// Info information about target for display
-type Info struct {
-	Name       string
-	Link       string
-	UpcomingAt time.Time
-	StartedAt  time.Time
-	FinishedAt time.Time
-}
-
-// IsUpcoming is true if stream has a known upcoming time
-func (i Info) IsUpcoming() bool {
-	return time.Until(i.UpcomingAt) > 0
-}
-
-// IsLive is true if stream is active
-func (i Info) IsLive() bool {
-	return !i.StartedAt.IsZero() && i.StartedAt.Sub(i.FinishedAt) >= 0
-}
-
-// IsFinished is true if stream has ended
-func (i Info) IsFinished() bool {
-	return !i.FinishedAt.IsZero() && i.StartedAt.Sub(i.FinishedAt) < 0
-}
-
-// IsOffLine is true when the stream is not live and we do not when it will be live
-func (i Info) IsOffLine() bool {
-	return !i.IsLive() && !i.IsUpcoming()
-}
-
-type byUrgency []Info
+type byUrgency []*tracked
 
 func (s byUrgency) Len() int {
 	return len(s)
@@ -68,7 +35,7 @@ func (s byUrgency) Less(a, b int) bool {
 	}
 
 	if s[a].IsLive() && s[b].IsLive() {
-		return s[a].StartedAt.After(s[b].StartedAt)
+		return s[a].StartedAt().After(s[b].StartedAt())
 	}
 
 	if s[a].IsUpcoming() && !s[b].IsUpcoming() {
@@ -80,8 +47,8 @@ func (s byUrgency) Less(a, b int) bool {
 	}
 
 	if s[a].IsUpcoming() && s[b].IsUpcoming() {
-		return s[a].UpcomingAt.Before(s[b].UpcomingAt)
+		return s[a].UpcomingAt().Before(s[b].UpcomingAt())
 	}
 
-	return s[a].Name < s[b].Name
+	return s[a].Target.Name() < s[b].Target.Name()
 }

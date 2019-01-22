@@ -17,13 +17,14 @@ package ipc
 
 import (
 	"fmt"
+
 	"github.com/bobbytrapz/autosr/track"
 )
 
 // Dashboard represents a connected dashboard
 type Dashboard struct {
-	SelectURL string
-	Tracking  track.Display
+	SelectURL  string
+	TrackTable track.DisplayTable
 }
 
 var status Dashboard
@@ -35,13 +36,13 @@ func replicate(req *Dashboard, res *Dashboard) {
 		status.SelectURL = req.SelectURL
 	}
 
-	d := track.ListTracking()
-	res.Tracking.Live = make([]track.Info, len(d.Live))
-	copy(res.Tracking.Live, d.Live)
-	res.Tracking.Upcoming = make([]track.Info, len(d.Upcoming))
-	copy(res.Tracking.Upcoming, d.Upcoming)
-	res.Tracking.OffLine = make([]track.Info, len(d.OffLine))
-	copy(res.Tracking.OffLine, d.OffLine)
+	d := track.Display()
+	res.TrackTable.Live = make([]track.DisplayRow, len(d.Live))
+	copy(res.TrackTable.Live, d.Live)
+	res.TrackTable.Upcoming = make([]track.DisplayRow, len(d.Upcoming))
+	copy(res.TrackTable.Upcoming, d.Upcoming)
+	res.TrackTable.Offline = make([]track.DisplayRow, len(d.Offline))
+	copy(res.TrackTable.Offline, d.Offline)
 }
 
 // Status for the dashboard

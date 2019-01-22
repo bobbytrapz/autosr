@@ -133,9 +133,9 @@ func drawTargetList(v *gocui.View) {
 	v.SelBgColor = 0
 	v.SelFgColor = 0
 
-	numLive := len(res.Tracking.Live)
-	numUpcoming := len(res.Tracking.Upcoming)
-	numOffLine := len(res.Tracking.OffLine)
+	numLive := len(res.TrackTable.Live)
+	numUpcoming := len(res.TrackTable.Upcoming)
+	numOffLine := len(res.TrackTable.Offline)
 
 	tw := tabwriter.NewWriter(v, 0, 0, 4, ' ', 0)
 	if numLive > 0 || numUpcoming > 0 || numOffLine > 0 {
@@ -151,33 +151,22 @@ func drawTargetList(v *gocui.View) {
 	v.SelBgColor = gocui.ColorGreen
 	v.SelFgColor = gocui.ColorBlack
 
-	for _, t := range res.Tracking.Live {
-		at := t.StartedAt.Format(time.Kitchen)
-		status := fmt.Sprintf("Now (%s)", at)
-		fmt.Fprintf(tw, "%s\t%s\t%s\n", status, t.Name, t.Link)
+	for _, row := range res.TrackTable.Live {
+		fmt.Fprintf(tw, "%s\t%s\t%s\n", row.Status, row.Name, row.Link)
 	}
 	if numLive > 0 {
 		fmt.Fprintln(tw, "\t\t\t")
 	}
 
-	for _, t := range res.Tracking.Upcoming {
-		var status string
-		at := time.Until(t.UpcomingAt).Truncate(time.Second)
-		if at > time.Second {
-			status = fmt.Sprintf("Soon (%s)", at)
-		} else {
-			status = "Soon"
-		}
-		fmt.Fprintf(tw, "%s\t%s\t%s\n", status, t.Name, t.Link)
-
+	for _, row := range res.TrackTable.Upcoming {
+		fmt.Fprintf(tw, "%s\t%s\t%s\n", row.Status, row.Name, row.Link)
 	}
 	if numUpcoming > 0 {
 		fmt.Fprintln(tw, "\t\t\t")
 	}
 
-	for _, t := range res.Tracking.OffLine {
-		status := "Offline"
-		fmt.Fprintf(tw, "%s\t%s\t%s\n", status, t.Name, t.Link)
+	for _, row := range res.TrackTable.Offline {
+		fmt.Fprintf(tw, "%s\t%s\t%s\n", row.Status, row.Name, row.Link)
 	}
 
 	tw.Flush()
