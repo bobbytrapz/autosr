@@ -267,7 +267,6 @@ func moveUp(g *gocui.Gui, v *gocui.View) error {
 	if l, err := v.Line(cy - 1); err == nil && strings.TrimSpace(l) == "" {
 		return moveUp(g, v)
 	}
-	readURL(g, v)
 
 	return nil
 }
@@ -292,7 +291,6 @@ func moveDown(g *gocui.Gui, v *gocui.View) error {
 	if l, err := v.Line(cy + 1); err == nil && strings.TrimSpace(l) == "" {
 		return moveDown(g, v)
 	}
-	readURL(g, v)
 
 	return nil
 }
@@ -313,6 +311,8 @@ func readURL(g *gocui.Gui, v *gocui.View) error {
 }
 
 func cancelTarget(g *gocui.Gui, v *gocui.View) error {
+	readURL(g, v)
+
 	if err := call("CancelTarget"); err != nil {
 		return fmt.Errorf("dashboard.cancelTarget: %s", err)
 	}
