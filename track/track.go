@@ -33,6 +33,11 @@ var wg sync.WaitGroup
 
 // Wait for tracking tasks to finish
 func Wait() {
+	log.Println("track.Wait: finishing...")
+	// cancel all tasks
+	for _, t := range tracking {
+		t.Cancel()
+	}
 	wg.Wait()
 	log.Println("track.Wait: all tasks done")
 }
