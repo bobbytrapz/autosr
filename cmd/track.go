@@ -40,7 +40,7 @@ func init() {
 }
 
 func copyFile(from, to string) error {
-	src, err := os.OpenFile(from, os.O_RDONLY|os.O_CREATE, 0600)
+	src, err := os.OpenFile(from, os.O_RDONLY, 0600)
 	if err != nil {
 		return fmt.Errorf("cmd.copyFile: %s", err)
 	}
@@ -135,11 +135,6 @@ When you change this file the tracked targets are updated right away.
 			return
 		}
 
-		if err := copyFile(fn, fn+".backup"); err != nil {
-			fmt.Println("error:", err)
-			return
-		}
-
 		f, err := os.OpenFile(fn, os.O_RDONLY|os.O_CREATE, 0600)
 		if err != nil {
 			fmt.Println("error:", err)
@@ -147,6 +142,11 @@ When you change this file the tracked targets are updated right away.
 		}
 		// we only wanted to create the file
 		f.Close()
+
+		if err := copyFile(fn, fn+".backup"); err != nil {
+			fmt.Println("error:", err)
+			return
+		}
 
 		err = syscall.Exec(app, appArgs, os.Environ())
 
