@@ -23,15 +23,49 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"sync"
 	"time"
 
 	"github.com/bobbytrapz/autosr/options"
 )
 
+var saving = struct {
+	sync.RWMutex
+	lookup map[string]bool
+}{
+	lookup: make(map[string]bool),
+}
+
+func hasSave(link string) bool {
+	saving.RLock()
+	defer saving.RUnlock()
+	return saving.lookup[link]
+}
+
+// give true if it is newly added
+func addSave(link string) bool {
+	saving.Lock()
+	defer saving.Unlock()
+
+	if _, ok := saving.lookup[link]; ok {
+		return false
+	}
+
+	saving.lookup[link] = true
+	return true
+}
+
+func delSave(link string) {
+	saving.Lock()
+	defer saving.Unlock()
+	delete(saving.lookup, link)
+}
+
 // Save recording of a stream to disk
 func Save(ctx context.Context, tracked *tracked) error {
-	if tracked.Status() == saving {
-		log.Println("track.Save:", tracked.Target.Name(), "resumed")
+	link := tracked.Target.Link()
+	if link == "" {
+		return errors.New("track.Save: no url")
 	}
 
 	url := tracked.StreamURL()
@@ -39,9 +73,12 @@ func Save(ctx context.Context, tracked *tracked) error {
 		return errors.New("track.Save: no stream url")
 	}
 
-	tracked.SetStatus(saving)
+	if !addSave(link) {
+		log.Println("track.Save:", tracked.Target.Name(), "already saving")
+		return nil
+	}
+
 	tracked.SetStartedAt(time.Now())
-	tracked.SetFinishedAt(time.Time{})
 	tracked.Target.BeginSave()
 
 	cmd, err := RunDownloader(ctx, url, tracked.Target.Name())
@@ -58,11 +95,18 @@ func Save(ctx context.Context, tracked *tracked) error {
 		for {
 			select {
 			case <-ctx.Done():
-				log.Println("track.Save:", tracked.Target.Name(), "canceled")
+				log.Printf("track.Save: %s canceled [%s %d]", tracked.Target.Name(), cmd.Args[0], cmd.Process.Pid)
+				// stop saving now
+				delSave(tracked.Target.Link())
+				cmd.Process.Kill()
+				tracked.SetFinishedAt(time.Now())
 				tracked.Target.EndSave(nil)
 				return
 			case <-exit:
 				log.Printf("track.Save: %s done [%s %d]", tracked.Target.Name(), cmd.Args[0], cmd.Process.Pid)
+				log.Println("track.Save:", tracked.Target.Name(), err)
+				// something may have gone wrong so try again right now
+				snipeEnded(tracked, time.Now())
 				return
 			}
 		}
@@ -76,13 +120,7 @@ func Save(ctx context.Context, tracked *tracked) error {
 	// monitor downloader
 	go func() {
 		defer close(exit)
-
-		err := cmd.Wait()
-		if err != nil {
-			log.Println("track.Save:", tracked.Target.Name(), err)
-			// something may have gone wrong so try again right now
-			SnipeAt(tracked, time.Now())
-		}
+		cmd.Wait()
 	}()
 
 	return nil

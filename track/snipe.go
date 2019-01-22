@@ -20,11 +20,44 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"sync"
 	"time"
 
 	"github.com/bobbytrapz/autosr/backoff"
 	"github.com/bobbytrapz/autosr/retry"
 )
+
+var sniping = struct {
+	sync.RWMutex
+	lookup map[string]bool
+}{
+	lookup: make(map[string]bool),
+}
+
+func hasSnipe(link string) bool {
+	sniping.RLock()
+	defer sniping.RUnlock()
+	return sniping.lookup[link]
+}
+
+// give true if it is newly added
+func addSnipe(link string) bool {
+	sniping.Lock()
+	defer sniping.Unlock()
+
+	if _, ok := sniping.lookup[link]; ok {
+		return false
+	}
+
+	sniping.lookup[link] = true
+	return true
+}
+
+func delSnipe(link string) {
+	sniping.Lock()
+	defer sniping.Unlock()
+	delete(sniping.lookup, link)
+}
 
 // SnipeTargetAt snipes a target at the given time
 func SnipeTargetAt(t Target, at time.Time) error {
@@ -45,9 +78,38 @@ func SnipeAt(tracked *tracked, at time.Time) error {
 	if at.IsZero() {
 		return errors.New("track.SnipeAt: invalid time")
 	}
+	log.Println("track.SnipeAt:", tracked.Target.Name(), "at", at.Format(time.UnixDate))
 
-	if tracked.Status() == sniping {
-		// already sniping so this is redudant
+	link := tracked.Target.Link()
+
+	if hasSave(link) {
+		log.Println("track.Snipe:", tracked.Target.Name(), "already saving")
+		return nil
+	}
+
+	if !addSnipe(link) {
+		log.Println("track.Snipe:", tracked.Target.Name(), "already sniping")
+		return nil
+	}
+
+	tracked.SetUpcomingAt(at)
+
+	ctx := context.Background()
+	ctx, cancel := context.WithCancel(ctx)
+	tracked.SetCancel(cancel)
+
+	return snipe(ctx, tracked)
+}
+
+// snipe a stream we think has ended
+// we do not check if it is saving
+func snipeEnded(tracked *tracked, at time.Time) error {
+	if at.IsZero() {
+		return errors.New("track.SnipeAt: invalid time")
+	}
+
+	if !addSnipe(tracked.Target.Link()) {
+		log.Println("track.Snipe:", tracked.Target.Name(), "already sniping")
 		return nil
 	}
 
@@ -61,27 +123,16 @@ func SnipeAt(tracked *tracked, at time.Time) error {
 }
 
 func snipe(ctx context.Context, tracked *tracked) error {
-	if tracked.Status() == sniping {
-		return nil
-	}
-
-	upcomingAt := tracked.UpcomingAt()
-
-	if upcomingAt.IsZero() {
-		return errors.New("track.snipe: invalid time")
-	}
-
-	if tracked.Status() != saving {
-		// if we are saving then this is called see if there was an error with the recording
-		// so we should keep the status
-		tracked.SetStatus(sniping)
-	}
 	tracked.Target.BeginSnipe()
+	upcomingAt := tracked.UpcomingAt()
 
 	// snipe target
 	go func() {
 		wg.Add(1)
 		defer wg.Done()
+
+		log.Println("track.snipe:", tracked.Target.Name())
+		defer delSnipe(tracked.Target.Link())
 
 		// wait until we expect the target to stream
 		check := time.NewTimer(time.Until(upcomingAt))
@@ -91,7 +142,6 @@ func snipe(ctx context.Context, tracked *tracked) error {
 			select {
 			case <-ctx.Done():
 				log.Println("track.snipe:", tracked.Target.Name(), "canceled")
-				tracked.SetStatus(sleeping)
 				return
 			case <-check.C:
 				// set timeout for sniping
@@ -108,16 +158,17 @@ func snipe(ctx context.Context, tracked *tracked) error {
 							select {
 							case <-ctx.Done():
 								log.Println("track.snipe:", tracked.Target.Name(), "canceled")
-								tracked.SetStatus(sleeping)
 								return
 							case <-to.C:
+								link := tracked.Target.Link()
 								log.Println("track.snipe:", tracked.Target.Name(), "timeout")
-								if tracked.Status() == saving {
+								if hasSave(link) {
 									// so we were finished minutes ago
 									at := time.Now().Add(-timeout)
 									tracked.SetFinishedAt(at)
-									tracked.SetStatus(sleeping)
 									log.Printf("track.snipe: %s finished at %s", tracked.Target.Name(), at)
+									// end save
+									delSave(link)
 									tracked.Target.EndSave(nil)
 								}
 								return
@@ -129,7 +180,6 @@ func snipe(ctx context.Context, tracked *tracked) error {
 								e, ok = retry.StringCheck(err)
 								if !ok {
 									// we failed and should not try again
-									tracked.SetStatus(sleeping)
 									return
 								}
 								log.Println("track.snipe:", err)
@@ -141,6 +191,8 @@ func snipe(ctx context.Context, tracked *tracked) error {
 				log.Println("track.snipe:", tracked.Target.Name(), "found url.")
 				tracked.SetStreamURL(url)
 				tracked.SetUpcomingAt(time.Time{})
+				// if we were saving forget it because we may have a new stream url
+				delSave(tracked.Target.Link())
 				if err := Save(ctx, tracked); err != nil {
 					log.Println("track.snipe:", err)
 				}
