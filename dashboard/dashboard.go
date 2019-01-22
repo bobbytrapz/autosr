@@ -276,7 +276,7 @@ func moveDown(g *gocui.Gui, v *gocui.View) error {
 
 	ox, oy := v.Origin()
 	cx, cy := v.Cursor()
-	if oy+cy+1 >= numRows()+1 {
+	if oy+cy+1 >= numRows() {
 		return nil
 	}
 	debug(fmt.Sprintf("cursor: %d %d", cx, cy+1))
