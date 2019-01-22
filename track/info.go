@@ -68,7 +68,7 @@ func (s byUrgency) Less(a, b int) bool {
 	}
 
 	if s[a].IsLive() && s[b].IsLive() {
-		return s[a].StartedAt.Before(s[b].StartedAt)
+		return s[a].StartedAt.After(s[b].StartedAt)
 	}
 
 	if s[a].IsUpcoming() && !s[b].IsUpcoming() {
