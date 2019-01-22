@@ -18,6 +18,7 @@ package track
 import (
 	"context"
 	"errors"
+	"log"
 	"path/filepath"
 	"sync"
 	"time"
@@ -33,6 +34,7 @@ var wg sync.WaitGroup
 // Wait for tracking tasks to finish
 func Wait() {
 	wg.Wait()
+	log.Println("track.Wait: all tasks done")
 }
 
 type tracked struct {

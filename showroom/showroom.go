@@ -60,7 +60,7 @@ var targets = make([]Target, 0)
 
 func check() error {
 	if len(targets) == 0 {
-		fmt.Println("showroom.check: no targets")
+		log.Println("showroom.check: no targets")
 		return nil
 	}
 
@@ -162,7 +162,7 @@ func Start() (err error) {
 		}
 	}()
 
-	fmt.Println("showroom.Start: ok")
+	log.Println("showroom.Start: ok")
 
 	return
 }
@@ -225,7 +225,7 @@ func readTrackList() error {
 
 	// wait until all urls have been added
 	wg.Wait()
-	fmt.Println("showroom.readTrackList: done")
+	log.Println("showroom.readTrackList: done")
 
 	return nil
 }
