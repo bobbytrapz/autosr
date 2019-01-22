@@ -17,7 +17,6 @@ package showroom
 
 import (
 	"bytes"
-	"context"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -113,7 +112,7 @@ type wsConnection struct {
 	URL url.URL
 }
 
-func (w *wsConnection) connect(ctx context.Context) {
+func connect(w *wsConnection) {
 	ua := options.Get("user_agent")
 
 	// dial
@@ -181,7 +180,7 @@ func (w *wsConnection) connect(ctx context.Context) {
 				if err := c.WriteMessage(websocket.TextMessage, pingcmd); err != nil {
 					log.Println("[websocket:write] tried to send ping:", err)
 				}
-			case <-ctx.Done():
+			case <-shutdown:
 				/*
 					// sending quit causes abnormal closure
 					log.Printf("[websocket] %s", quitcmd)
@@ -214,13 +213,12 @@ func (w *wsConnection) connect(ctx context.Context) {
 // WatchEvents tracks websockets events
 func WatchEvents() {
 	// create websocket connection
-	wsc := wsConnection{
+	connect(&wsConnection{
 		URL: url.URL{
 			Scheme: "wss",
 			Host:   bcsvrHost,
 		},
-	}
-	wsc.connect(ctx)
+	})
 
 	go func() {
 		wg.Add(1)
@@ -228,7 +226,7 @@ func WatchEvents() {
 
 		for {
 			select {
-			case <-ctx.Done():
+			case <-shutdown:
 				log.Println("[WatchEvents] done")
 				return
 			default:

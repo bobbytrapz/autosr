@@ -54,8 +54,7 @@ type Gift struct {
 
 var m sync.RWMutex
 var wg sync.WaitGroup
-var ctx context.Context
-var shutdown context.CancelFunc
+var shutdown = make(chan struct{})
 
 var targets = make([]Target, 0)
 
@@ -113,11 +112,12 @@ func check() error {
 
 // Start showroom module
 func Start() (err error) {
-	ctx = context.Background()
-	ctx, shutdown = context.WithCancel(ctx)
+	ctx := context.Background()
+	ctx, cancel := context.WithCancel(ctx)
 	go func() {
-		defer shutdown()
-		<-ctx.Done()
+		<-shutdown
+		// cancel poll
+		cancel()
 		log.Println("showroom.Stop: finishing...")
 		wg.Wait()
 		log.Println("showroom.Stop: done")
@@ -162,12 +162,14 @@ func Start() (err error) {
 		}
 	}()
 
+	fmt.Println("showroom.Start: ok")
+
 	return
 }
 
 // Stop cancels context
 func Stop() {
-	shutdown()
+	shutdown <- struct{}{}
 }
 
 func readTrackList() error {
