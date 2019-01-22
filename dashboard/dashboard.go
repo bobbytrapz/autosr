@@ -189,6 +189,7 @@ func layout(g *gocui.Gui) error {
 		}
 
 		v.Highlight = true
+		v.SetCursor(0, 1)
 
 		drawTargetList(v)
 	}
@@ -249,7 +250,9 @@ func quit(g *gocui.Gui, v *gocui.View) error {
 	return gocui.ErrQuit
 }
 
-const topRow = 5
+func numRows() int {
+	return len(res.TrackTable.Live) + len(res.TrackTable.Upcoming) + len(res.TrackTable.Offline)
+}
 
 func moveUp(g *gocui.Gui, v *gocui.View) error {
 	if v == nil {
@@ -258,8 +261,13 @@ func moveUp(g *gocui.Gui, v *gocui.View) error {
 
 	ox, oy := v.Origin()
 	cx, cy := v.Cursor()
+	if cy-1 <= 0 {
+		return nil
+	}
+	debug(fmt.Sprintf("cursor: %d %d", cx, cy-1))
 	if err := v.SetCursor(cx, cy-1); err != nil && oy > 0 {
 		if err := v.SetOrigin(ox, oy-1); err != nil {
+			debug(fmt.Sprintf("origin: %d %d", ox, oy-1))
 			return err
 		}
 	}
@@ -274,9 +282,14 @@ func moveDown(g *gocui.Gui, v *gocui.View) error {
 	}
 
 	cx, cy := v.Cursor()
+	if cy+1 >= numRows()+1 {
+		return nil
+	}
+	debug(fmt.Sprintf("cursor: %d %d", cx, cy+1))
 	if err := v.SetCursor(cx, cy+1); err != nil {
 		ox, oy := v.Origin()
 		if err := v.SetOrigin(ox, oy+1); err != nil {
+			debug(fmt.Sprintf("origin: %d %d", ox, oy+1))
 			return err
 		}
 	}
@@ -291,9 +304,12 @@ func readURL(g *gocui.Gui, v *gocui.View) error {
 		ndx := strings.Index(line, "http")
 		if ndx > -1 {
 			req.SelectURL = line[ndx:]
+		} else {
+			req.SelectURL = ""
 		}
 	}
 
+	debug(fmt.Sprintf("selected url: %s", req.SelectURL))
 	return nil
 }
 
