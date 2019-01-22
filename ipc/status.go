@@ -16,6 +16,7 @@
 package ipc
 
 import (
+	"fmt"
 	"github.com/bobbytrapz/autosr/track"
 )
 
@@ -46,6 +47,13 @@ func replicate(req *Dashboard, res *Dashboard) {
 // Status for the dashboard
 func (c *Command) Status(req *Dashboard, res *Dashboard) error {
 	replicate(req, res)
+
+	return nil
+}
+
+// Debug for the dashboard
+func (c *Command) Debug(s string, none *struct{}) error {
+	fmt.Println(s)
 
 	return nil
 }

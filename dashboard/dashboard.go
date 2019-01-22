@@ -47,6 +47,13 @@ var colorLogo = `
  [0;1;31;91m⠣[0;1;33;93m⠼[0m [0;1;32;92m⠣⠼[0m [0;1;36;96m⠘[0;1;34;94m⠤[0m [0;1;35;95m⠣⠜[0m [0;1;31;91m⠭[0;1;33;93m⠕[0m [0;1;32;92m⠏[0m
 `
 
+func debug(s string) {
+	none := struct{}{}
+	if err := remote.Call("Command.Debug", &s, &none); err != nil {
+		panic(err)
+	}
+}
+
 // Run the dashboard
 func Run(bColor bool) {
 	shouldColorLogo = bColor
@@ -65,7 +72,6 @@ func Run(bColor bool) {
 	}
 	defer g.Close()
 
-	g.Cursor = true
 	g.Mouse = true
 	g.Highlight = true
 
@@ -124,6 +130,8 @@ func drawLogo(v *gocui.View) {
 
 func drawTargetList(v *gocui.View) {
 	v.Clear()
+	v.SelBgColor = 0
+	v.SelFgColor = 0
 
 	numLive := len(res.Tracking.Live)
 	numUpcoming := len(res.Tracking.Upcoming)
@@ -139,6 +147,9 @@ func drawTargetList(v *gocui.View) {
 
 		return
 	}
+
+	v.SelBgColor = gocui.ColorGreen
+	v.SelFgColor = gocui.ColorBlack
 
 	for _, t := range res.Tracking.Live {
 		at := t.StartedAt.Format(time.Kitchen)
@@ -189,8 +200,6 @@ func layout(g *gocui.Gui) error {
 		}
 
 		v.Highlight = true
-		v.SelBgColor = gocui.ColorGreen
-		v.SelFgColor = gocui.ColorBlack
 
 		drawTargetList(v)
 	}
@@ -290,10 +299,9 @@ func moveDown(g *gocui.Gui, v *gocui.View) error {
 func readURL(g *gocui.Gui, v *gocui.View) error {
 	_, cy := v.Cursor()
 	if line, err := v.Line(cy); err == nil {
-		sp := strings.Split(line, " ")
-		if len(sp) == 3 {
-			req.SelectURL = sp[2]
-			println(sp[2])
+		ndx := strings.Index(line, "http")
+		if ndx > -1 {
+			req.SelectURL = line[ndx:]
 		}
 	}
 
@@ -313,15 +321,5 @@ func reloadTargets(g *gocui.Gui, v *gocui.View) error {
 		return fmt.Errorf("dashboard.reloadTargets: %s", err)
 	}
 	redraw(g)
-	return nil
-}
-
-func selectURL(g *gocui.Gui, v *gocui.View) error {
-	m.Lock()
-	defer m.Unlock()
-
-	req.SelectURL = fmt.Sprintf("https://dummy.selection/t=%d", time.Now().Unix())
-	redraw(g)
-
 	return nil
 }
