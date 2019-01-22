@@ -103,8 +103,6 @@ func Save(ctx context.Context, tracked *tracked) error {
 				tracked.Target.EndSave(nil)
 				return
 			case <-exit:
-				log.Printf("track.Save: %s done [%s %d]", tracked.Target.Name(), cmd.Args[0], cmd.Process.Pid)
-				log.Println("track.Save:", tracked.Target.Name(), err)
 				// something may have gone wrong so try again right now
 				snipeEnded(tracked, time.Now())
 				return
@@ -120,7 +118,8 @@ func Save(ctx context.Context, tracked *tracked) error {
 	// monitor downloader
 	go func() {
 		defer close(exit)
-		cmd.Wait()
+		err := cmd.Wait()
+		log.Printf("track.Save: %s done [%s %d] (%s)", tracked.Target.Name(), cmd.Args[0], cmd.Process.Pid, err)
 	}()
 
 	return nil
