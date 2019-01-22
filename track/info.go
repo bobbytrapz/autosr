@@ -43,6 +43,11 @@ func (i Info) IsFinished() bool {
 	return !i.FinishedAt.IsZero() && i.StartedAt.Sub(i.FinishedAt) < 0
 }
 
+// IsOffLine is true when the stream is not live and we do not when it will be live
+func (i Info) IsOffLine() bool {
+	return !i.IsLive() && !i.IsUpcoming()
+}
+
 type byUrgency []Info
 
 func (s byUrgency) Len() int {
