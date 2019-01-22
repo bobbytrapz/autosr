@@ -64,6 +64,8 @@ func check() error {
 		return nil
 	}
 
+	log.Println("showroom.check: checking...")
+
 	var wg sync.WaitGroup
 	m.RLock()
 	for _, target := range targets {
