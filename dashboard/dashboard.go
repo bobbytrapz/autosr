@@ -113,6 +113,11 @@ func redraw(g *gocui.Gui) {
 			switch v.Name() {
 			case "target-list":
 				drawTargetList(v)
+				// fix cursor
+				_, cy := v.Cursor()
+				if l, err := v.Line(cy); err == nil && strings.TrimSpace(l) == "" {
+					return moveUp(g, v)
+				}
 			}
 		}
 
@@ -235,6 +240,12 @@ func keys(g *gocui.Gui) (err error) {
 func call(method string) error {
 	m.Lock()
 	defer m.Unlock()
+
+	// clear tables
+	res.TrackTable.Live = nil
+	res.TrackTable.Upcoming = nil
+	res.TrackTable.Offline = nil
+
 	if err := remote.Call("Command."+method, req, &res); err != nil {
 		return fmt.Errorf("dashboard.call: %s", err)
 	}
