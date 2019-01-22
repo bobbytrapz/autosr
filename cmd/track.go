@@ -29,31 +29,31 @@ import (
 )
 
 var shouldDump bool
+var listFile string
 
 const trackListFileName = "track.list"
 
 func init() {
 	rootCmd.AddCommand(trackCmd)
 	trackCmd.Flags().BoolVarP(&shouldDump, "dump", "d", false, "Dump track list")
+	trackCmd.Flags().StringVarP(&listFile, "list", "l", "", "Use a given file as the new track list")
 }
 
-func copyTo(path string) error {
-	fn := filepath.Join(options.ConfigPath, trackListFileName)
-
-	src, err := os.OpenFile(fn, os.O_RDONLY|os.O_CREATE, 0600)
+func copyFile(from, to string) error {
+	src, err := os.OpenFile(from, os.O_RDONLY|os.O_CREATE, 0600)
 	if err != nil {
-		return fmt.Errorf("cmd.copyTo: %s", err)
+		return fmt.Errorf("cmd.copyFile: %s", err)
 	}
 	defer src.Close()
 
-	dst, err := os.OpenFile(path, os.O_WRONLY|os.O_TRUNC|os.O_CREATE, 0600)
+	dst, err := os.OpenFile(to, os.O_WRONLY|os.O_TRUNC|os.O_CREATE, 0600)
 	if err != nil {
-		return fmt.Errorf("cmd.copyTo: %s", err)
+		return fmt.Errorf("cmd.copyFile: %s", err)
 	}
 	defer dst.Close()
 
 	if _, err := io.Copy(dst, src); err != nil {
-		return fmt.Errorf("cmd.copyTo: %s", err)
+		return fmt.Errorf("cmd.copyFile: %s", err)
 	}
 
 	return nil
@@ -80,6 +80,14 @@ When you change this file the tracked targets are updated right away.
 				return
 			}
 
+			return
+		}
+
+		if listFile != "" {
+			if err := copyFile(listFile, fn); err != nil {
+				fmt.Println("error:", err)
+				return
+			}
 			return
 		}
 
@@ -127,7 +135,7 @@ When you change this file the tracked targets are updated right away.
 			return
 		}
 
-		if err := copyTo(fn + ".backup"); err != nil {
+		if err := copyFile(fn, fn+".backup"); err != nil {
 			fmt.Println("error:", err)
 			return
 		}
