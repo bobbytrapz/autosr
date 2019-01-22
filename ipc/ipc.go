@@ -46,7 +46,7 @@ func Start() {
 	}
 
 	go func() {
-		log.Println("ipc.Start: listening")
+		log.Println("ipc.Start: ok")
 		if err := server.ListenAndServe(); err != nil {
 			if op, ok := err.(*net.OpError); ok {
 				if op.Op == "listen" {
