@@ -29,6 +29,7 @@ import (
 	"github.com/bobbytrapz/autosr/ipc"
 	"github.com/bobbytrapz/autosr/options"
 	"github.com/bobbytrapz/autosr/showroom"
+	"github.com/bobbytrapz/autosr/track"
 	"github.com/spf13/cobra"
 )
 
@@ -115,10 +116,15 @@ Details can be found at https://github.com/bobbytrapz/autosr/LICENSE.
 		defer cancel()
 
 		// start ipc
-		ipc.Start(ctx)
+		ipc.Start()
+		defer ipc.Stop()
 
 		// start showroom
-		showroom.Start(ctx)
+		showroom.Start()
+		defer showroom.Stop()
+
+		// wait for all tracking related tasks to complete
+		defer track.Wait()
 
 		// handle interrupt
 		sig := make(chan os.Signal, 1)

@@ -31,15 +31,17 @@ import (
 // Command to perform
 type Command struct{}
 
+var server *http.Server
+
 // Start ipc server
-func Start(ctx context.Context) {
+func Start() {
 	addr := options.Get("listen_on")
 
 	c := new(Command)
 	rpc.Register(c)
 	rpc.HandleHTTP()
 
-	server := &http.Server{
+	server = &http.Server{
 		Addr: addr,
 	}
 
@@ -59,13 +61,13 @@ func Start(ctx context.Context) {
 			}
 		}
 	}()
+}
 
-	go func() {
-		<-ctx.Done()
-		log.Println("ipc.Stop: finishing...")
-		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-		defer cancel()
-		server.Shutdown(ctx)
-		log.Println("ipc.Stop: done")
-	}()
+// Stop cleanly shuts down
+func Stop() {
+	log.Println("ipc.Stop: finishing...")
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	server.Shutdown(ctx)
+	log.Println("ipc.Stop: done")
 }

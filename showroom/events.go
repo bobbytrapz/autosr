@@ -212,7 +212,7 @@ func (w *wsConnection) connect(ctx context.Context) {
 }
 
 // WatchEvents tracks websockets events
-func WatchEvents(ctx context.Context) {
+func WatchEvents() {
 	// create websocket connection
 	wsc := wsConnection{
 		URL: url.URL{

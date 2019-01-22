@@ -54,11 +54,8 @@ type Gift struct {
 
 var m sync.RWMutex
 var wg sync.WaitGroup
-
-// Wait for showroom tasks to finish
-func Wait() {
-	wg.Wait()
-}
+var ctx context.Context
+var shutdown context.CancelFunc
 
 var targets = make([]Target, 0)
 
@@ -115,7 +112,17 @@ func check() error {
 }
 
 // Start showroom module
-func Start(ctx context.Context) (err error) {
+func Start() (err error) {
+	ctx = context.Background()
+	ctx, shutdown = context.WithCancel(ctx)
+	go func() {
+		defer shutdown()
+		<-ctx.Done()
+		log.Println("showroom.Stop: finishing...")
+		wg.Wait()
+		log.Println("showroom.Stop: done")
+	}()
+
 	// read the track list to find out who we are watching
 	if err = readTrackList(); err != nil {
 		err = fmt.Errorf("showroom.Start: %s", err)
@@ -156,6 +163,11 @@ func Start(ctx context.Context) (err error) {
 	}()
 
 	return
+}
+
+// Stop cancels context
+func Stop() {
+	shutdown()
 }
 
 func readTrackList() error {
