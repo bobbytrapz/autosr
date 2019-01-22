@@ -52,6 +52,10 @@ func readPidAndKill() error {
 
 	fmt.Printf("autosr (%d)\n", pid)
 	proc.Kill()
+	_, err = proc.Wait()
+	if err != nil {
+		return err
+	}
 
 	return nil
 }
