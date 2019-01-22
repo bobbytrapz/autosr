@@ -28,6 +28,9 @@ import (
 	"github.com/bobbytrapz/autosr/track"
 )
 
+// note: this is arbitrary
+const maxDisplayLength = 45
+
 // AddTargetFromURL adds showroom user using the url
 // returns true if they were actually added
 func AddTargetFromURL(link string) (bool, error) {
@@ -45,7 +48,12 @@ func AddTargetFromURL(link string) (bool, error) {
 	var buf bytes.Buffer
 	for _, r := range name {
 		buf.WriteRune(r)
-		buf.WriteRune(' ')
+		if len(buf.String()) > maxDisplayLength {
+			break
+		}
+		if r != ' ' && r != '(' && r != ')' {
+			buf.WriteRune(' ')
+		}
 	}
 
 	t := Target{
