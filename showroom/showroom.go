@@ -54,7 +54,7 @@ type Gift struct {
 
 var m sync.RWMutex
 var wg sync.WaitGroup
-var shutdown = make(chan struct{})
+var stop = make(chan struct{}, 1)
 
 var targets = make([]Target, 0)
 
@@ -63,8 +63,7 @@ func check() error {
 		log.Println("showroom.check: no targets")
 		return nil
 	}
-
-	log.Println("showroom.check: checking...")
+	log.Println("showroom.check:", len(targets), "targets")
 
 	var wg sync.WaitGroup
 	m.RLock()
@@ -74,11 +73,16 @@ func check() error {
 			defer wg.Done()
 
 			// each target gets a separate timeout
-			timeout := time.NewTimer(time.Minute)
+			// check is called by poll so we only check for a little while
+			timeout := time.NewTimer(30 * time.Second)
 			defer timeout.Stop()
 
-			isLive, err := checkIsLive(t.id)
-			if err == nil && isLive {
+			// check target's actual room for stream url or upcoming date
+			var streamURL string
+			var err error
+			if streamURL, err = t.checkRoom(); err == nil {
+				log.Println("showroom.check:", t.name, "is live now!", streamURL)
+				// they are live now so snipe them now
 				if err = track.SnipeTargetAt(t, time.Now()); err != nil {
 					log.Println("showroom.check:", err)
 				}
@@ -86,19 +90,22 @@ func check() error {
 			}
 
 			numAttempts := 0
-			e, ok := retry.BoolCheck(err)
-			for ; ok; e, ok = retry.BoolCheck(err) {
+			e, ok := retry.StringCheck(err)
+			for ; ok; e, ok = retry.StringCheck(err) {
 				select {
 				case <-time.After(backoff.DefaultPolicy.Duration(numAttempts)):
 					numAttempts++
-					isLive, err = e.Retry()
-					if err == nil && isLive {
+					streamURL, err = e.Retry()
+					if err == nil {
 						if err = track.SnipeTargetAt(t, time.Now()); err != nil {
 							log.Println("showroom.check:", err)
 						}
 					}
 				case <-timeout.C:
 					log.Println("showroom.check:", t.name, "timeout")
+					return
+				case <-stop:
+					log.Println("showroom.check:", t.name, "stopped")
 					return
 				}
 			}
@@ -107,16 +114,20 @@ func check() error {
 	m.RUnlock()
 
 	// wait for each target to finish checking
+	log.Println("showroom.check: waiting...")
 	wg.Wait()
 
 	return nil
 }
 
 // Start showroom module
-func Start(ctx context.Context) (err error) {
+func Start() (err error) {
+	ctx := context.Background()
+	ctx, cancel := context.WithCancel(ctx)
 	go func() {
-		<-shutdown
+		<-stop
 		log.Println("showroom.Stop: finishing...")
+		cancel()
 		wg.Wait()
 		log.Println("showroom.Stop: done")
 	}()
@@ -147,7 +158,7 @@ func Start(ctx context.Context) (err error) {
 
 		for {
 			select {
-			case <-ctx.Done():
+			case <-stop:
 				return
 			case ev := <-w.Events:
 				log.Println("showroom.Start: update:", ev.Name, ev.Op)
@@ -167,7 +178,7 @@ func Start(ctx context.Context) (err error) {
 
 // Stop cancels context
 func Stop() {
-	shutdown <- struct{}{}
+	close(stop)
 }
 
 func readTrackList() error {
@@ -205,6 +216,7 @@ func readTrackList() error {
 	// add targets
 	var wg sync.WaitGroup
 	for url := range lst {
+		// fixme: if an interrupt happens in the middle of this we do not shutdown gracefully
 		go func(u string) {
 			wg.Add(1)
 			defer wg.Done()

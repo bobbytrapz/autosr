@@ -180,7 +180,7 @@ func connect(w *wsConnection) {
 				if err := c.WriteMessage(websocket.TextMessage, pingcmd); err != nil {
 					log.Println("[websocket:write] tried to send ping:", err)
 				}
-			case <-shutdown:
+			case <-stop:
 				/*
 					// sending quit causes abnormal closure
 					log.Printf("[websocket] %s", quitcmd)
@@ -226,7 +226,7 @@ func WatchEvents() {
 
 		for {
 			select {
-			case <-shutdown:
+			case <-stop:
 				log.Println("[WatchEvents] done")
 				return
 			default:
