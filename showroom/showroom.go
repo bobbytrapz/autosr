@@ -53,13 +53,10 @@ type Gift struct {
 }
 
 var m sync.RWMutex
-var wg sync.WaitGroup
-var stop = make(chan struct{}, 1)
 
 var targets = make([]Target, 0)
 
 func check(ctx context.Context) error {
-	// fix: problem is likely here
 	if len(targets) == 0 {
 		log.Println("showroom.check: no targets")
 		return nil
@@ -68,11 +65,11 @@ func check(ctx context.Context) error {
 
 	m.RLock()
 	defer m.RUnlock()
-	var wg sync.WaitGroup
+	var waitCheck sync.WaitGroup
 	for _, target := range targets {
-		wg.Add(1)
+		waitCheck.Add(1)
 		go func(t Target) {
-			defer wg.Done()
+			defer waitCheck.Done()
 
 			// each target gets a separate timeout
 			// check is called by poll so we only check for a little while
@@ -82,21 +79,21 @@ func check(ctx context.Context) error {
 			// check target's actual room for stream url or upcoming date
 			var streamURL string
 			var err error
-			if streamURL, err = t.checkRoom(); err == nil {
+			if streamURL, err = t.CheckStream(ctx); err == nil {
 				log.Println("showroom.check:", t.name, "is live now!", streamURL)
 				// they are live now so snipe them now
-				if err = track.SnipeTargetAt(t, time.Now()); err != nil {
+				if err = track.SnipeTargetAt(ctx, t, time.Now()); err != nil {
 					log.Println("showroom.check:", err)
 				}
 				return
 			}
 
 			numAttempts := 0
-			_, ok := retry.StringCheck(err)
-			for ; ok; _, ok = retry.StringCheck(err) {
-				// note: we are inspecting the error and hate ourselves
-				if !strings.HasPrefix(err.Error(), "showroom.checkRoom") {
-					log.Println("showroom.check:", t.name, "done")
+			e, ok := retry.StringCheck(err)
+			for ; ok; e, ok = retry.StringCheck(err) {
+				// check if error just a stream was not found or new time
+				// if so, we should not bother retrying
+				if !strings.HasPrefix(err.Error(), "showroom.CheckStream") {
 					return
 				}
 				select {
@@ -105,7 +102,7 @@ func check(ctx context.Context) error {
 					// check for room again
 					streamURL, err = t.checkRoom()
 					if err == nil {
-						if err = track.SnipeTargetAt(t, time.Now()); err != nil {
+						if err = track.SnipeTargetAt(ctx, t, time.Now()); err != nil {
 							log.Println("showroom.check:", err)
 						}
 					}
@@ -113,7 +110,7 @@ func check(ctx context.Context) error {
 					log.Println("showroom.check:", t.name, "timeout")
 					return
 				case <-ctx.Done():
-					log.Println("showroom.check:", t.name, "stopped")
+					log.Println("showroom.check:", t.name, ctx.Err())
 					return
 				}
 			}
@@ -121,28 +118,41 @@ func check(ctx context.Context) error {
 	}
 
 	// wait for each target to finish checking
-	wg.Wait()
-	log.Println("showroom.check: done")
+	done := make(chan struct{}, 1)
+	go func() {
+		defer close(done)
+		waitCheck.Wait()
+	}()
+	select {
+	case <-done:
+		log.Println("showroom.check: done")
+	case <-ctx.Done():
+		log.Println("showroom.check:", ctx.Err())
+	}
 
 	return nil
 }
 
 // Start showroom module
-func Start() (err error) {
-	ctx := context.Background()
-	ctx, cancel := context.WithCancel(ctx)
+func Start(ctx context.Context) (err error) {
+	// clean shutdown
 	go func() {
-		<-stop
-		log.Println("showroom.Stop: finishing...")
-		cancel()
-		wg.Wait()
-		log.Println("showroom.Stop: done")
+		<-ctx.Done()
+		log.Println("showroom: finishing...")
+		track.Wait()
 	}()
 
 	// read the track list to find out who we are watching
-	if err = readTrackList(); err != nil {
+	if err = readTrackList(ctx); err != nil {
 		err = fmt.Errorf("showroom.Start: %s", err)
 		return
+	}
+
+	select {
+	case <-ctx.Done():
+		log.Println("showroom.Start:", ctx.Err())
+		return
+	default:
 	}
 
 	if err = track.Poll(ctx, check); err != nil {
@@ -150,10 +160,17 @@ func Start() (err error) {
 		return
 	}
 
+	select {
+	case <-ctx.Done():
+		log.Println("showroom.Start:", ctx.Err())
+		return
+	default:
+	}
+
 	// watch track list
-	wg.Add(1)
+	track.Add(1)
 	go func() {
-		defer wg.Done()
+		defer track.Done()
 		w, err := fsnotify.NewWatcher()
 		if err != nil {
 			log.Println("showroom.Start: cannot make watcher:", err)
@@ -167,12 +184,13 @@ func Start() (err error) {
 
 		for {
 			select {
-			case <-stop:
+			case <-ctx.Done():
+				log.Println("showroom.Start:", ctx.Err())
 				return
 			case ev := <-w.Events:
 				log.Println("showroom.Start: update:", ev.Name, ev.Op)
 				if ev.Op == fsnotify.Write || ev.Op == fsnotify.Remove {
-					readTrackList()
+					readTrackList(ctx)
 				}
 			case err := <-w.Errors:
 				log.Println("showroom.Start: error:", err)
@@ -185,12 +203,7 @@ func Start() (err error) {
 	return
 }
 
-// Stop cancels context
-func Stop() {
-	close(stop)
-}
-
-func readTrackList() error {
+func readTrackList(ctx context.Context) error {
 	log.Println("showroom.readTrackList: reading...")
 
 	f, err := os.Open(track.ListPath)
@@ -225,13 +238,18 @@ func readTrackList() error {
 	}
 
 	// add targets
-	var wg sync.WaitGroup
+	var waitAdd sync.WaitGroup
 	for url := range lst {
-		// fixme: if an interrupt happens in the middle of this we do not shutdown gracefully
-		wg.Add(1)
+		select {
+		case <-ctx.Done():
+			log.Println("showroom.readTrackList:", ctx.Err())
+			break
+		default:
+		}
+		waitAdd.Add(1)
 		go func(u string) {
-			defer wg.Done()
-			ok, err := AddTargetFromURL(u)
+			defer waitAdd.Done()
+			ok, err := AddTargetFromURL(ctx, u)
 			if err != nil {
 				fmt.Println("showroom:", err)
 				return
@@ -245,8 +263,17 @@ func readTrackList() error {
 	}
 
 	// wait until all urls have been added
-	wg.Wait()
-	log.Println("showroom.readTrackList: done")
+	done := make(chan struct{}, 1)
+	go func() {
+		defer close(done)
+		waitAdd.Wait()
+	}()
+	select {
+	case <-done:
+		log.Println("showroom.readTrackList: done")
+	case <-ctx.Done():
+		log.Println("showroom.readTrackList:", ctx.Err())
+	}
 
 	return nil
 }
