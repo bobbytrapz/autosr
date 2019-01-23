@@ -126,8 +126,8 @@ func snipe(ctx context.Context, tracked *tracked) error {
 	link := tracked.Link()
 
 	// snipe target
+	wg.Add(1)
 	go func() {
-		wg.Add(1)
 		defer wg.Done()
 
 		log.Println("track.snipe:", name)

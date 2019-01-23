@@ -145,8 +145,8 @@ func connect(w *wsConnection) {
 
 	done := make(chan struct{})
 	// read
+	wg.Add(1)
 	go func() {
-		wg.Add(1)
 		defer wg.Done()
 
 		defer close(done)
@@ -162,8 +162,8 @@ func connect(w *wsConnection) {
 	}()
 
 	// write
+	wg.Add(1)
 	go func() {
-		wg.Add(1)
 		defer wg.Done()
 
 		log.Printf("[websocket] write")
@@ -220,8 +220,8 @@ func WatchEvents() {
 		},
 	})
 
+	wg.Add(1)
 	go func() {
-		wg.Add(1)
 		defer wg.Done()
 
 		for {

@@ -90,8 +90,8 @@ func Save(ctx context.Context, tracked *tracked) error {
 	exit := make(chan struct{}, 1)
 
 	// handle canceling downloader
+	wg.Add(1)
 	go func() {
-		wg.Add(1)
 		defer wg.Done()
 
 		for {
@@ -102,8 +102,6 @@ func Save(ctx context.Context, tracked *tracked) error {
 				delSave(link)
 				tracked.EndSave(nil)
 				tracked.SetFinishedAt(time.Now())
-				cmd.Process.Kill()
-
 				return
 			case <-exit:
 				// something may have gone wrong so try again right now
@@ -126,6 +124,31 @@ func Save(ctx context.Context, tracked *tracked) error {
 	}()
 
 	return nil
+}
+
+var running = make(map[string]*exec.Cmd)
+
+func add(link string, cmd *exec.Cmd) {
+	saving.Lock()
+	defer saving.Unlock()
+	running[link] = cmd
+}
+
+func stopAll() {
+	var wg sync.WaitGroup
+	for link, cmd := range running {
+		wg.Add(1)
+		go func(l string, c *exec.Cmd) {
+			defer wg.Done()
+			c.Process.Kill()
+			c.Wait()
+			log.Println("track.stopAll:", l, "stopped")
+		}(link, cmd)
+	}
+
+	log.Println("track.stopAll: waiting...")
+	wg.Wait()
+	log.Println("track.stopAll: done")
 }
 
 // RunDownloader runs the user's downloader
@@ -162,6 +185,8 @@ func RunDownloader(ctx context.Context, url, name string) (cmd *exec.Cmd, err er
 		return
 	}
 	cmd.Dir = saveTo
+
+	running[url] = cmd
 
 	return
 }

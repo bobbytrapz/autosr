@@ -68,8 +68,8 @@ func check() error {
 	var wg sync.WaitGroup
 	m.RLock()
 	for _, target := range targets {
+		wg.Add(1)
 		go func(t Target) {
-			wg.Add(1)
 			defer wg.Done()
 
 			// each target gets a separate timeout
@@ -217,8 +217,8 @@ func readTrackList() error {
 	var wg sync.WaitGroup
 	for url := range lst {
 		// fixme: if an interrupt happens in the middle of this we do not shutdown gracefully
+		wg.Add(1)
 		go func(u string) {
-			wg.Add(1)
 			defer wg.Done()
 			ok, err := AddTargetFromURL(u)
 			if err != nil {
