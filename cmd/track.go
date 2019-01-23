@@ -130,14 +130,9 @@ When you change this file the tracked targets are updated right away.
 			appArgs = []string{app, fn}
 		}
 
-		if err := os.MkdirAll(options.ConfigPath, 0700); err != nil {
-			fmt.Println("error:", err)
-			return
-		}
-
 		f, err := os.OpenFile(fn, os.O_RDONLY|os.O_CREATE, 0600)
 		if err != nil {
-			fmt.Println("error:", err)
+			fmt.Printf("error: opening '%s': %s\n", fn, err)
 			return
 		}
 		// we only wanted to create the file
@@ -150,7 +145,7 @@ When you change this file the tracked targets are updated right away.
 
 		err = syscall.Exec(app, appArgs, os.Environ())
 
-		fmt.Println("error:", err)
+		fmt.Printf("error: running '%s' (%v): %s\n", app, appArgs, err)
 		return
 	},
 }
