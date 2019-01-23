@@ -100,7 +100,7 @@ func check(ctx context.Context) error {
 				case <-time.After(backoff.DefaultPolicy.Duration(numAttempts)):
 					numAttempts++
 					// check for room again
-					streamURL, err = t.checkRoom()
+					streamURL, err = e.Retry()
 					if err == nil {
 						if err = track.SnipeTargetAt(ctx, t, time.Now()); err != nil {
 							log.Println("showroom.check:", err)
