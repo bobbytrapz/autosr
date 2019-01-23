@@ -99,7 +99,7 @@ When you change this file the tracked targets are updated right away.
 			editor := os.Getenv("EDITOR")
 			if editor == "" {
 				app = "open"
-				appArgs = []string{"open", "-a", fn}
+				appArgs = []string{"open", "-e", fn}
 			} else {
 				app, err = exec.LookPath(editor)
 				if err != nil {

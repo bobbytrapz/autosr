@@ -46,7 +46,7 @@ var optionsCmd = &cobra.Command{
 		switch runtime.GOOS {
 		case "darwin":
 			app = "open"
-			appArgs = []string{"open", "-a", fn}
+			appArgs = []string{"open", "-e", fn}
 		case "windows":
 			sys := os.Getenv("SYSTEM32")
 			if sys != "" {
