@@ -116,14 +116,14 @@ Details can be found at https://github.com/bobbytrapz/autosr/LICENSE.
 		ctx, cancel := context.WithCancel(ctx)
 		defer cancel()
 
+		// wait for all tracking related tasks to complete
+		defer track.Wait()
+
 		// start ipc
 		ipc.Start(ctx)
 
 		// start showroom
 		showroom.Start(ctx)
-
-		// wait for all tracking related tasks to complete
-		defer track.Wait()
 
 		// handle interrupt
 		sig := make(chan os.Signal, 1)
@@ -136,6 +136,7 @@ Details can be found at https://github.com/bobbytrapz/autosr/LICENSE.
 				fmt.Println("autosr: caught signal")
 				cancel()
 			case <-ctx.Done():
+				fmt.Println("autosr: finishing...")
 				return
 			}
 		}

@@ -132,7 +132,7 @@ func snipe(ctx context.Context, tracked *tracked) error {
 		for {
 			select {
 			case <-ctx.Done():
-				log.Println("track.snipe:", name, "canceled")
+				log.Println("track.snipe:", name, ctx.Err())
 				return
 			case <-check.C:
 				// set timeout for sniping
@@ -148,7 +148,7 @@ func snipe(ctx context.Context, tracked *tracked) error {
 						for n := 0; ; n++ {
 							select {
 							case <-ctx.Done():
-								log.Println("track.snipe:", name, "canceled")
+								log.Println("track.snipe:", name, ctx.Err())
 								return
 							case <-to.C:
 								link := tracked.Link()

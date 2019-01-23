@@ -19,6 +19,7 @@ import (
 	"context"
 	"errors"
 	"log"
+	"os"
 	"path/filepath"
 	"sync"
 	"time"
@@ -33,9 +34,20 @@ var wg sync.WaitGroup
 
 // Wait for tracking tasks to finish
 func Wait() {
+	done := make(chan struct{}, 1)
+	go func() {
+		defer close(done)
+		wg.Wait()
+	}()
 	log.Println("track.Wait: finishing...")
-	wg.Wait()
-	log.Println("track.Wait: all tasks done")
+	select {
+	case <-time.After(5 * time.Second):
+		log.Println("track.Wait: force shutdown")
+		os.Exit(0)
+	case <-done:
+		log.Println("track.Wait: done")
+		return
+	}
 }
 
 type tracked struct {

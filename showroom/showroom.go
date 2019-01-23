@@ -105,7 +105,7 @@ func check(ctx context.Context) error {
 					log.Println("showroom.check:", t.name, "timeout")
 					return
 				case <-ctx.Done():
-					log.Println("showroom.check:", t.name, "stopped")
+					log.Println("showroom.check:", t.name, ctx.Err())
 					return
 				}
 			}
@@ -157,6 +157,9 @@ func Start(ctx context.Context) (err error) {
 
 		for {
 			select {
+			case <-ctx.Done():
+				log.Println("showroom.Start:", ctx.Err())
+				return
 			case ev := <-w.Events:
 				log.Println("showroom.Start: update:", ev.Name, ev.Op)
 				if ev.Op == fsnotify.Write || ev.Op == fsnotify.Remove {
@@ -208,17 +211,17 @@ func readTrackList(ctx context.Context) error {
 	}
 
 	// add targets
-	var wg sync.WaitGroup
+	var waitAdd sync.WaitGroup
 	for url := range lst {
 		select {
 		case <-ctx.Done():
-			log.Println("showroom.readTrackList: cancelled")
+			log.Println("showroom.readTrackList:", ctx.Err())
 			break
 		default:
 		}
-		wg.Add(1)
+		waitAdd.Add(1)
 		go func(u string) {
-			defer wg.Done()
+			defer waitAdd.Done()
 			ok, err := AddTargetFromURL(ctx, u)
 			if err != nil {
 				fmt.Println("showroom:", err)
@@ -233,8 +236,17 @@ func readTrackList(ctx context.Context) error {
 	}
 
 	// wait until all urls have been added
-	wg.Wait()
-	log.Println("showroom.readTrackList: done")
+	done := make(chan struct{}, 1)
+	go func() {
+		defer close(done)
+		waitAdd.Wait()
+	}()
+	select {
+	case <-done:
+		log.Println("showroom.readTrackList: done")
+	case <-ctx.Done():
+		log.Println("showroom.readTrackList:", ctx.Err())
+	}
 
 	return nil
 }

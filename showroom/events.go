@@ -227,7 +227,7 @@ func WatchEvents(ctx context.Context) {
 		for {
 			select {
 			case <-ctx.Done():
-				log.Println("[WatchEvents] done")
+				log.Println("showroom.WatchEvents:", ctx.Err())
 				return
 			default:
 			}

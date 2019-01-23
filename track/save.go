@@ -99,8 +99,15 @@ func Save(ctx context.Context, tracked *tracked) error {
 		for {
 			select {
 			case <-ctx.Done():
+				delSave(link)
+				cmd.Process.Kill()
+				err := cmd.Wait()
+				log.Printf("track.Save: %s %s [%s %d] (%s)", name, ctx.Err(), app, pid, err)
+				tracked.EndSave(nil)
+				tracked.SetFinishedAt(time.Now())
+				return
 			case <-cancelSave:
-				// stop saving now
+				// we have been selected for cancellation
 				delSave(link)
 				cmd.Process.Kill()
 				err := cmd.Wait()
