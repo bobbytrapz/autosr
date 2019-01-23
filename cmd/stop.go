@@ -27,6 +27,8 @@ import (
 	"github.com/spf13/cobra"
 )
 
+var errNoChildProcesses = "waitid: no child processes"
+
 func readPidAndKill() error {
 	pidPath := filepath.Join(options.ConfigPath, pidFileName)
 	data, err := ioutil.ReadFile(pidPath)
@@ -53,11 +55,10 @@ func readPidAndKill() error {
 	fmt.Printf("autosr (%d)\n", pid)
 	proc.Kill()
 	_, err = proc.Wait()
-	if err != nil && err.Error() != "waitid: no child processes" {
-		return err
+	if err == nil || err.Error() == errNoChildProcesses {
+		return nil
 	}
-
-	return nil
+	return err
 }
 
 func init() {
