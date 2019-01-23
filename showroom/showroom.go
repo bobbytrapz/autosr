@@ -53,7 +53,6 @@ type Gift struct {
 }
 
 var m sync.RWMutex
-var wg sync.WaitGroup
 
 var targets = make([]Target, 0)
 
@@ -139,8 +138,7 @@ func Start(ctx context.Context) (err error) {
 	go func() {
 		<-ctx.Done()
 		log.Println("showroom: finishing...")
-		wg.Wait()
-		log.Println("showroom: done")
+		track.Wait()
 	}()
 
 	// read the track list to find out who we are watching
@@ -169,9 +167,9 @@ func Start(ctx context.Context) (err error) {
 	}
 
 	// watch track list
-	wg.Add(1)
+	track.Add(1)
 	go func() {
-		defer wg.Done()
+		defer track.Done()
 		w, err := fsnotify.NewWatcher()
 		if err != nil {
 			log.Println("showroom.Start: cannot make watcher:", err)

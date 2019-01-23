@@ -32,6 +32,16 @@ var tracking = make(map[string]*tracked)
 
 var wg sync.WaitGroup
 
+// Add a task
+func Add(delta int) {
+	wg.Add(delta)
+}
+
+// Done removes a task
+func Done() {
+	wg.Done()
+}
+
 // Wait for tracking tasks to finish
 func Wait() {
 	done := make(chan struct{}, 1)

@@ -26,6 +26,7 @@ import (
 	"time"
 
 	"github.com/bobbytrapz/autosr/options"
+	"github.com/bobbytrapz/autosr/track"
 	"github.com/gorilla/websocket"
 )
 
@@ -146,9 +147,9 @@ func connect(ctx context.Context, w *wsConnection) {
 
 	done := make(chan struct{}, 1)
 	// read
-	wg.Add(1)
+	track.Add(1)
 	go func() {
-		defer wg.Done()
+		defer track.Done()
 		defer close(done)
 		log.Printf("[websocket] read")
 		for {
@@ -162,9 +163,9 @@ func connect(ctx context.Context, w *wsConnection) {
 	}()
 
 	// write
-	wg.Add(1)
+	track.Add(1)
 	go func() {
-		defer wg.Done()
+		defer track.Done()
 
 		log.Printf("[websocket] write")
 		defer c.Close()
@@ -220,9 +221,9 @@ func WatchEvents(ctx context.Context) {
 		},
 	})
 
-	wg.Add(1)
+	track.Add(1)
 	go func() {
-		defer wg.Done()
+		defer track.Done()
 
 		for {
 			select {
