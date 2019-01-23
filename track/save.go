@@ -126,23 +126,6 @@ func Save(ctx context.Context, tracked *tracked) error {
 	return nil
 }
 
-func stopAll() {
-	var wg sync.WaitGroup
-	for link, cmd := range saving.lookup {
-		wg.Add(1)
-		go func(l string, c *exec.Cmd) {
-			defer wg.Done()
-			c.Process.Kill()
-			c.Wait()
-			log.Println("track.stopAll:", l, "stopped")
-		}(link, cmd)
-	}
-
-	log.Println("track.stopAll: waiting...")
-	wg.Wait()
-	log.Println("track.stopAll: done")
-}
-
 // RunDownloader runs the user's downloader
 func RunDownloader(ctx context.Context, url, name string) (cmd *exec.Cmd, err error) {
 	saveTo := filepath.Join(options.Get("save_to"), name)
