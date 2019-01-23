@@ -17,6 +17,7 @@ package track
 
 import (
 	"fmt"
+	"log"
 	"sort"
 	"time"
 )
@@ -35,11 +36,16 @@ type DisplayTable struct {
 	Offline  []DisplayRow
 }
 
-func displayRow(t *tracked) DisplayRow {
-	row := DisplayRow{
+func displayRow(t *tracked) (row DisplayRow, err error) {
+	row = DisplayRow{
 		Status: "unknown",
-		Name:   t.Target.Display(),
-		Link:   t.Target.Link(),
+		Name:   t.Display(),
+		Link:   t.Link(),
+	}
+
+	if row.Name == "" || row.Link == "" {
+		err = fmt.Errorf("track.displayRow: invalid row")
+		return
 	}
 
 	if t.IsLive() {
@@ -56,12 +62,17 @@ func displayRow(t *tracked) DisplayRow {
 		row.Status = "Offline"
 	}
 
-	return row
+	return
 }
 
 func displayList(lst []*tracked) (d []DisplayRow) {
 	for _, t := range lst {
-		d = append(d, displayRow(t))
+		row, err := displayRow(t)
+		if err == nil {
+			d = append(d, row)
+		} else {
+			log.Println("track.displayList:", err)
+		}
 	}
 
 	return

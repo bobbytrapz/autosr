@@ -56,6 +56,16 @@ type tracked struct {
 	streamURL string
 }
 
+func (t *tracked) Display() string {
+	t.RLock()
+	defer t.RUnlock()
+	if t.target == nil {
+		return ""
+	}
+
+	return t.target.Display()
+}
+
 func (t *tracked) Name() string {
 	t.RLock()
 	defer t.RUnlock()
