@@ -24,6 +24,7 @@ import (
 	"time"
 
 	"github.com/bobbytrapz/autosr/ipc"
+	"github.com/bobbytrapz/autosr/track"
 	"github.com/jroimartin/gocui"
 )
 
@@ -135,6 +136,8 @@ func drawLogo(v *gocui.View) {
 	}
 }
 
+var table = make([]track.DisplayRow, 0)
+
 func drawTargetList(v *gocui.View) {
 	v.Clear()
 	v.SelBgColor = 0
@@ -154,22 +157,28 @@ func drawTargetList(v *gocui.View) {
 	v.SelBgColor = gocui.ColorGreen
 	v.SelFgColor = gocui.ColorBlack
 
+	table = nil
 	for _, row := range res.TrackTable.Live {
-		fmt.Fprintf(tw, "%s\t%s\t%s\n", row.Status, row.Name, row.Link)
+		fmt.Fprintf(tw, "%s\t%s\n", row.Status, row.Name)
+		table = append(table, row)
 	}
 	if numLive > 0 {
 		fmt.Fprintln(tw, "\t\t\t")
+		table = append(table, track.DisplayRow{})
 	}
 
 	for _, row := range res.TrackTable.Upcoming {
-		fmt.Fprintf(tw, "%s\t%s\t%s\n", row.Status, row.Name, row.Link)
+		fmt.Fprintf(tw, "%s\t%s\n", row.Status, row.Name)
+		table = append(table, row)
 	}
 	if numUpcoming > 0 {
 		fmt.Fprintln(tw, "\t\t\t")
+		table = append(table, track.DisplayRow{})
 	}
 
 	for _, row := range res.TrackTable.Offline {
-		fmt.Fprintf(tw, "%s\t%s\t%s\n", row.Status, row.Name, row.Link)
+		fmt.Fprintf(tw, "%s\t%s\n", row.Status, row.Name)
+		table = append(table, row)
 	}
 
 	tw.Flush()
@@ -226,11 +235,15 @@ func keys(g *gocui.Gui) (err error) {
 	}
 
 	// command
-	if err = g.SetKeybinding("target-list", 'c', gocui.ModNone, cancelTarget); err != nil {
+	if err = g.SetKeybinding("target-list", 'r', gocui.ModNone, reloadTargets); err != nil {
 		return
 	}
 
-	if err = g.SetKeybinding("target-list", 'r', gocui.ModNone, reloadTargets); err != nil {
+	if err = g.SetKeybinding("target-list", 'o', gocui.ModNone, openTarget); err != nil {
+		return
+	}
+
+	if err = g.SetKeybinding("target-list", 'c', gocui.ModNone, cancelTarget); err != nil {
 		return
 	}
 
@@ -304,28 +317,24 @@ func moveDown(g *gocui.Gui, v *gocui.View) error {
 	return nil
 }
 
-func readURL(g *gocui.Gui, v *gocui.View) error {
+func selected(v *gocui.View) track.DisplayRow {
+	_, oy := v.Origin()
 	_, cy := v.Cursor()
-	if line, err := v.Line(cy); err == nil {
-		ndx := strings.Index(line, "http")
-		if ndx > -1 {
-			req.SelectURL = line[ndx:]
-		} else {
-			req.SelectURL = ""
-		}
-	}
-
-	debug(fmt.Sprintf("selected url: %s", req.SelectURL))
-	return nil
+	return table[oy+cy]
 }
 
 func cancelTarget(g *gocui.Gui, v *gocui.View) error {
-	readURL(g, v)
+	req.SelectURL = selected(v).Link
 
 	if err := call("CancelTarget"); err != nil {
 		return fmt.Errorf("dashboard.cancelTarget: %s", err)
 	}
 	redraw(g)
+	return nil
+}
+
+func openTarget(g *gocui.Gui, v *gocui.View) error {
+	openLink(selected(v).Link)
 	return nil
 }
 

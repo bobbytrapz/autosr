@@ -29,7 +29,7 @@ import (
 )
 
 // note: this is arbitrary
-const maxDisplayLength = 45
+const maxDisplayLength = 75
 
 // AddTargetFromURL adds showroom user using the url
 // returns true if they were actually added
