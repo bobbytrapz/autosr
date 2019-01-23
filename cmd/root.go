@@ -112,7 +112,8 @@ Details can be found at https://github.com/bobbytrapz/autosr/LICENSE.
 			dashboard.Run(shouldColorLogo)
 			return
 		}
-		ctx, cancel := context.WithCancel(context.Background())
+		ctx := context.Background()
+		ctx, cancel := context.WithCancel(ctx)
 		defer cancel()
 
 		// start ipc

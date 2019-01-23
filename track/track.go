@@ -121,9 +121,7 @@ func (t *tracked) Check(ctx context.Context) (string, error) {
 }
 
 func (t *tracked) Cancel() {
-	defer func() {
-		recover()
-	}()
+	defer recover()
 	close(t.cancelSave)
 }
 
