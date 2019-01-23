@@ -19,6 +19,7 @@ import (
 	"context"
 	"errors"
 	"log"
+	"os"
 	"path/filepath"
 	"sync"
 	"time"
@@ -31,21 +32,38 @@ var tracking = make(map[string]*tracked)
 
 var wg sync.WaitGroup
 
+// Add a task
+func Add(delta int) {
+	wg.Add(delta)
+}
+
+// Done removes a task
+func Done() {
+	wg.Done()
+}
+
 // Wait for tracking tasks to finish
 func Wait() {
+	done := make(chan struct{}, 1)
+	go func() {
+		defer close(done)
+		wg.Wait()
+	}()
 	log.Println("track.Wait: finishing...")
-	// cancel all tasks
-	for _, t := range tracking {
-		t.Cancel()
+	select {
+	case <-time.After(5 * time.Second):
+		log.Println("track.Wait: force shutdown")
+		os.Exit(0)
+	case <-done:
+		log.Println("track.Wait: done")
+		return
 	}
-	wg.Wait()
-	log.Println("track.Wait: all tasks done")
 }
 
 type tracked struct {
 	sync.RWMutex
-	target Target
-	cancel context.CancelFunc
+	target     Target
+	cancelSave chan struct{}
 
 	// schelduling
 	upcomingAt time.Time
@@ -116,26 +134,32 @@ func (t *tracked) EndSave(err error) {
 	t.target.EndSave(err)
 }
 
-func (t *tracked) Check() (string, error) {
+func (t *tracked) CheckLive(ctx context.Context) (bool, error) {
 	if t.target != nil {
-		return t.target.Check()
+		return t.target.CheckLive(ctx)
+	}
+
+	return false, errors.New("target is nil")
+}
+
+func (t *tracked) CheckStream(ctx context.Context) (string, error) {
+	if t.target != nil {
+		return t.target.CheckStream(ctx)
 	}
 
 	return "", errors.New("target is nil")
 }
 
 func (t *tracked) Cancel() {
-	if t.cancel == nil {
-		return
-	}
-	t.cancel()
+	defer recover()
+	close(t.cancelSave)
 }
 
 // SetCancel for tracked streamer
-func (t *tracked) SetCancel(c context.CancelFunc) {
+func (t *tracked) SetCancel(ch chan struct{}) {
 	t.Lock()
 	defer t.Unlock()
-	t.cancel = c
+	t.cancelSave = ch
 }
 
 // IsUpcoming is true if the target has a known upcoming time

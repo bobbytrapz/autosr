@@ -17,6 +17,7 @@ package showroom
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -25,6 +26,7 @@ import (
 	"time"
 
 	"github.com/bobbytrapz/autosr/options"
+	"github.com/bobbytrapz/autosr/track"
 	"github.com/gorilla/websocket"
 )
 
@@ -112,7 +114,7 @@ type wsConnection struct {
 	URL url.URL
 }
 
-func connect(w *wsConnection) {
+func connect(ctx context.Context, w *wsConnection) {
 	ua := options.Get("user_agent")
 
 	// dial
@@ -126,7 +128,7 @@ func connect(w *wsConnection) {
 		"User-Agent": []string{ua},
 	}
 	log.Printf("[websocket] dial %s (%v)", w.URL.String(), header)
-	c, _, err := dialer.Dial(w.URL.String(), header)
+	c, _, err := dialer.DialContext(ctx, w.URL.String(), header)
 	if err != nil {
 		panic(err)
 	}
@@ -143,12 +145,11 @@ func connect(w *wsConnection) {
 		log.Println("[websocket] tried to send sub:", err)
 	}
 
-	done := make(chan struct{})
+	done := make(chan struct{}, 1)
 	// read
-	wg.Add(1)
+	track.Add(1)
 	go func() {
-		defer wg.Done()
-
+		defer track.Done()
 		defer close(done)
 		log.Printf("[websocket] read")
 		for {
@@ -162,9 +163,9 @@ func connect(w *wsConnection) {
 	}()
 
 	// write
-	wg.Add(1)
+	track.Add(1)
 	go func() {
-		defer wg.Done()
+		defer track.Done()
 
 		log.Printf("[websocket] write")
 		defer c.Close()
@@ -180,7 +181,7 @@ func connect(w *wsConnection) {
 				if err := c.WriteMessage(websocket.TextMessage, pingcmd); err != nil {
 					log.Println("[websocket:write] tried to send ping:", err)
 				}
-			case <-stop:
+			case <-ctx.Done():
 				/*
 					// sending quit causes abnormal closure
 					log.Printf("[websocket] %s", quitcmd)
@@ -211,23 +212,23 @@ func connect(w *wsConnection) {
 }
 
 // WatchEvents tracks websockets events
-func WatchEvents() {
+func WatchEvents(ctx context.Context) {
 	// create websocket connection
-	connect(&wsConnection{
+	connect(ctx, &wsConnection{
 		URL: url.URL{
 			Scheme: "wss",
 			Host:   bcsvrHost,
 		},
 	})
 
-	wg.Add(1)
+	track.Add(1)
 	go func() {
-		defer wg.Done()
+		defer track.Done()
 
 		for {
 			select {
-			case <-stop:
-				log.Println("[WatchEvents] done")
+			case <-ctx.Done():
+				log.Println("showroom.WatchEvents:", ctx.Err())
 				return
 			default:
 			}

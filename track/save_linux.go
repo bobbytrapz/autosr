@@ -20,7 +20,7 @@ import (
 	"syscall"
 )
 
-func downloaderOptions(cmd *exec.Cmd) {
+func setArgs(cmd *exec.Cmd) {
 	cmd.SysProcAttr = &syscall.SysProcAttr{
 		Setpgid: true,
 	}

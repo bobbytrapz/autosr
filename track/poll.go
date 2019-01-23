@@ -45,6 +45,7 @@ func Poll(ctx context.Context, pollfn func(context.Context) error) error {
 			for ; ok; e, ok = retry.Check(err) {
 				select {
 				case <-ctx.Done():
+					log.Println("track.Poll:", ctx.Err())
 					return
 				case <-time.After(backoff.DefaultPolicy.Duration(numAttempts)):
 					numAttempts++
@@ -59,6 +60,7 @@ func Poll(ctx context.Context, pollfn func(context.Context) error) error {
 	}
 
 	// make first attempt right away
+	log.Println("track.Poll: first attempt...")
 	attempt()
 
 	// poll
@@ -72,7 +74,7 @@ func Poll(ctx context.Context, pollfn func(context.Context) error) error {
 		for {
 			select {
 			case <-ctx.Done():
-				log.Println("track.Poll: done")
+				log.Println("track.Poll:", ctx.Err())
 				return
 			case <-tick.C:
 			case <-check:

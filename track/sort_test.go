@@ -16,6 +16,7 @@
 package track
 
 import (
+	"context"
 	"sort"
 	"testing"
 	"time"
@@ -57,8 +58,13 @@ func (t dummy) Link() string {
 	return t.link
 }
 
-// Check gives nil if a stream has been found
-func (t dummy) Check() (streamURL string, err error) {
+// CheckLive gives true if the user is online
+func (t dummy) CheckLive(context.Context) (bool, error) {
+	return false, nil
+}
+
+// CheckStream gives nil if a stream has been found
+func (t dummy) CheckStream(context.Context) (streamURL string, err error) {
 	return "", nil
 }
 

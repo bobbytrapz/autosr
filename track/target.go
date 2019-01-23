@@ -15,6 +15,10 @@
 
 package track
 
+import (
+	"context"
+)
+
 // Target is being tracked for stream activity
 type Target interface {
 	// real name of streamer
@@ -26,8 +30,11 @@ type Target interface {
 
 	// save path
 	SavePath() string
+
+	// check for live status
+	CheckLive(context.Context) (bool, error)
 	// check for a live stream
-	Check() (string, error)
+	CheckStream(context.Context) (string, error)
 
 	// callback when sniping starts
 	BeginSnipe()

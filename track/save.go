@@ -85,9 +85,24 @@ func Save(ctx context.Context, tracked *tracked) error {
 		return fmt.Errorf("track.Save: %s", err)
 	}
 
-	exit := make(chan struct{}, 1)
+	if err := cmd.Start(); err != nil {
+		return fmt.Errorf("track.Save: %s", err)
+	}
+	app := cmd.Args[0]
+	pid := cmd.Process.Pid
+	log.Printf("track.Save: %s [%s %d]", name, app, pid)
 
-	// handle canceling downloader
+	cancelSave := make(chan struct{})
+	tracked.SetCancel(cancelSave)
+
+	exit := make(chan struct{}, 1)
+	// monitor downloader
+	go func() {
+		defer close(exit)
+		cmd.Wait()
+	}()
+
+	// handle closing downloader
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
@@ -95,32 +110,33 @@ func Save(ctx context.Context, tracked *tracked) error {
 		for {
 			select {
 			case <-ctx.Done():
-				log.Printf("track.Save: %s canceled [%s %d]", name, cmd.Args[0], cmd.Process.Pid)
-				// stop saving now
 				delSave(link)
+				cmd.Process.Kill()
+				err := cmd.Wait()
+				log.Printf("track.Save: %s %s [%s %d] (%s)", name, ctx.Err(), app, pid, err)
+				tracked.EndSave(nil)
+				tracked.SetFinishedAt(time.Now())
+				return
+			case <-cancelSave:
+				// we have been selected for cancellation
+				delSave(link)
+				cmd.Process.Kill()
+				err := cmd.Wait()
+				log.Printf("track.Save: %s canceled [%s %d] (%s)", name, app, pid, err)
 				tracked.EndSave(nil)
 				tracked.SetFinishedAt(time.Now())
 				return
 			case <-exit:
-				if hasSave(streamURL) {
+				if hasSave(link) {
 					// something may have gone wrong so try again right now
-					snipeEnded(tracked, time.Now())
+					log.Printf("track.Save: %s exited [%s %d] (%s)", name, app, pid, err)
+					snipeEnded(ctx, tracked, time.Now())
+				} else {
+					log.Printf("track.Save: %s done [%s %d] (%s)", name, app, pid, err)
 				}
 				return
 			}
 		}
-	}()
-
-	if err := cmd.Start(); err != nil {
-		return fmt.Errorf("track.Save: %s", err)
-	}
-	log.Printf("track.Save: %s [%s %d]", name, cmd.Args[0], cmd.Process.Pid)
-
-	// monitor downloader
-	go func() {
-		defer close(exit)
-		err := cmd.Wait()
-		log.Printf("track.Save: %s done [%s %d] (%s)", name, cmd.Args[0], cmd.Process.Pid, err)
 	}()
 
 	return nil
@@ -160,7 +176,7 @@ func RunDownloader(ctx context.Context, url, name string) (cmd *exec.Cmd, err er
 		return
 	}
 	cmd.Dir = saveTo
-	downloaderOptions(cmd)
+	setArgs(cmd)
 
 	return cmd, nil
 }

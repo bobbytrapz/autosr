@@ -19,5 +19,5 @@ import (
 	"os/exec"
 )
 
-func downloaderOptions(cmd *exec.Cmd) {
+func setArgs(cmd *exec.Cmd) {
 }

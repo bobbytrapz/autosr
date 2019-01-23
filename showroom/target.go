@@ -17,6 +17,7 @@ package showroom
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"log"
 	"net/url"
@@ -33,13 +34,13 @@ const maxDisplayLength = 75
 
 // AddTargetFromURL adds showroom user using the url
 // returns true if they were actually added
-func AddTargetFromURL(link string) (bool, error) {
+func AddTargetFromURL(ctx context.Context, link string) (bool, error) {
 	_, err := url.Parse(link)
 	if err != nil {
 		return false, fmt.Errorf("showroom.AddTargetFromURL: '%s' %s", link, err)
 	}
 
-	s, err := fetchRoom(link)
+	s, err := fetchRoom(ctx, link)
 	if err != nil {
 		return false, fmt.Errorf("showroom.AddTargetFromURL: '%s' %s", link, err)
 	}
@@ -75,10 +76,10 @@ func AddTargetFromURL(link string) (bool, error) {
 	m.Unlock()
 
 	// check target right away
-	if streamURL, err := t.checkRoom(); err == nil {
+	if streamURL, err := t.CheckStream(ctx); err == nil {
 		log.Println("showroom.AddTargetFromURL:", t.name, "is live now!", streamURL)
 		// they are live now so snipe them now
-		if err = track.SnipeTargetAt(t, time.Now()); err != nil {
+		if err = track.SnipeTargetAt(ctx, t, time.Now()); err != nil {
 			log.Println("showroom.AddTargetFromURL:", err)
 			return false, nil
 		}
@@ -154,36 +155,34 @@ func (t Target) Link() string {
 	return t.link
 }
 
-// Check gives nil if a stream has been found expects user to possibly be live
-func (t Target) Check() (streamURL string, err error) {
+// CheckLive gives true if the user is online
+func (t Target) CheckLive(ctx context.Context) (isLive bool, err error) {
 	// check to see if the user is live
-	// if not just give up now
-	var isLive bool
-	isLive, err = checkIsLive(t.id)
+	isLive, err = checkIsLive(ctx, t.id)
 	if err == nil && !isLive {
-		err = retry.StringError{
+		err = retry.BoolError{
 			Message: fmt.Sprintf("%s is not live yet", t.name),
-			Attempt: t.Check,
+			Attempt: func() (bool, error) {
+				return t.CheckLive(ctx)
+			},
 		}
-
-		return
 	}
 
-	// they are live so check their room
-	return t.checkRoom()
+	return
 }
 
-// check the user's actual room page
-// they may not actually be live but we can get the upcoming time as well
-func (t Target) checkRoom() (streamURL string, err error) {
-	wg.Add(1)
-	defer wg.Done()
+// CheckStream gives nil if a stream has been found and expects the user to possibly be live
+func (t Target) CheckStream(ctx context.Context) (streamURL string, err error) {
+	// check to see if the user is live
+	// if not just give up now
 	// get the room for this user
-	r, err := fetchRoom(t.link)
+	r, err := fetchRoom(ctx, t.link)
 	if err != nil {
 		err = retry.StringError{
-			Message: fmt.Sprintf("showroom.Target.Check: %s %s", t.name, err),
-			Attempt: t.Check,
+			Message: fmt.Sprintf("showroom.CheckStream: %s %s", t.name, err),
+			Attempt: func() (string, error) {
+				return t.CheckStream(ctx)
+			},
 		}
 
 		return
@@ -201,8 +200,8 @@ func (t Target) checkRoom() (streamURL string, err error) {
 		at := parseUpcomingDate(nextLive)
 
 		// there's a new date set so start a new one
-		if err = track.SnipeTargetAt(t, at); err != nil {
-			log.Println("showroom.Check:", err)
+		if err = track.SnipeTargetAt(ctx, t, at); err != nil {
+			log.Println("showroom.CheckStream:", err)
 
 			return
 		}
@@ -214,7 +213,9 @@ func (t Target) checkRoom() (streamURL string, err error) {
 
 	err = retry.StringError{
 		Message: fmt.Sprintf("%s has no stream yet", t.name),
-		Attempt: t.Check,
+		Attempt: func() (string, error) {
+			return t.CheckStream(ctx)
+		},
 	}
 
 	return

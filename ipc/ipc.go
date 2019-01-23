@@ -34,7 +34,7 @@ type Command struct{}
 var server *http.Server
 
 // Start ipc server
-func Start() {
+func Start(ctx context.Context) {
 	addr := options.Get("listen_on")
 
 	c := &Command{}
@@ -44,6 +44,15 @@ func Start() {
 	server = &http.Server{
 		Addr: addr,
 	}
+
+	// clean shutdown
+	go func() {
+		<-ctx.Done()
+		log.Println("ipc: finishing...")
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+		server.Shutdown(ctx)
+	}()
 
 	go func() {
 		log.Println("ipc.Start: ok")
@@ -61,13 +70,4 @@ func Start() {
 			}
 		}
 	}()
-}
-
-// Stop cleanly shuts down
-func Stop() {
-	log.Println("ipc.Stop: finishing...")
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-	server.Shutdown(ctx)
-	log.Println("ipc.Stop: done")
 }

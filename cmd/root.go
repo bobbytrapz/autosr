@@ -112,19 +112,21 @@ Details can be found at https://github.com/bobbytrapz/autosr/LICENSE.
 			dashboard.Run(shouldColorLogo)
 			return
 		}
-		ctx, cancel := context.WithCancel(context.Background())
+		ctx := context.Background()
+		ctx, cancel := context.WithCancel(ctx)
 		defer cancel()
 
+		// wait for all tracking related tasks to complete
+		defer func() {
+			track.Wait()
+			fmt.Println("autosr: done")
+		}()
+
 		// start ipc
-		ipc.Start()
-		defer ipc.Stop()
+		ipc.Start(ctx)
 
 		// start showroom
-		showroom.Start()
-		defer showroom.Stop()
-
-		// wait for all tracking related tasks to complete
-		defer track.Wait()
+		showroom.Start(ctx)
 
 		// handle interrupt
 		sig := make(chan os.Signal, 1)
@@ -137,6 +139,7 @@ Details can be found at https://github.com/bobbytrapz/autosr/LICENSE.
 				fmt.Println("autosr: caught signal")
 				cancel()
 			case <-ctx.Done():
+				fmt.Println("autosr: finishing...")
 				return
 			}
 		}
