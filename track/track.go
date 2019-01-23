@@ -124,9 +124,17 @@ func (t *tracked) EndSave(err error) {
 	t.target.EndSave(err)
 }
 
-func (t *tracked) Check(ctx context.Context) (string, error) {
+func (t *tracked) CheckLive(ctx context.Context) (bool, error) {
 	if t.target != nil {
-		return t.target.Check(ctx)
+		return t.target.CheckLive(ctx)
+	}
+
+	return false, errors.New("target is nil")
+}
+
+func (t *tracked) CheckStream(ctx context.Context) (string, error) {
+	if t.target != nil {
+		return t.target.CheckStream(ctx)
 	}
 
 	return "", errors.New("target is nil")

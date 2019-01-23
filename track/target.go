@@ -30,8 +30,11 @@ type Target interface {
 
 	// save path
 	SavePath() string
+
+	// check for live status
+	CheckLive(context.Context) (bool, error)
 	// check for a live stream
-	Check(context.Context) (string, error)
+	CheckStream(context.Context) (string, error)
 
 	// callback when sniping starts
 	BeginSnipe()

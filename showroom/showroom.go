@@ -80,7 +80,7 @@ func check(ctx context.Context) error {
 			// check target's actual room for stream url or upcoming date
 			var streamURL string
 			var err error
-			if streamURL, err = t.checkRoom(ctx); err == nil {
+			if streamURL, err = t.CheckStream(ctx); err == nil {
 				log.Println("showroom.check:", t.name, "is live now!", streamURL)
 				// they are live now so snipe them now
 				if err = track.SnipeTargetAt(ctx, t, time.Now()); err != nil {
@@ -92,6 +92,11 @@ func check(ctx context.Context) error {
 			numAttempts := 0
 			e, ok := retry.StringCheck(err)
 			for ; ok; e, ok = retry.StringCheck(err) {
+				// check if error just a stream was not found or new time
+				// if so, we should not bother retrying
+				if !strings.HasPrefix(err.Error(), "showroom.CheckStream") {
+					return
+				}
 				select {
 				case <-time.After(backoff.DefaultPolicy.Duration(numAttempts)):
 					numAttempts++

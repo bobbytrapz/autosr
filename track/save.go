@@ -80,8 +80,6 @@ func Save(ctx context.Context, tracked *tracked) error {
 	if err != nil {
 		return fmt.Errorf("track.Save: %s", err)
 	}
-	app := cmd.Args[0]
-	pid := cmd.Process.Pid
 
 	if err := addSave(link, cmd); err != nil {
 		return fmt.Errorf("track.Save: %s", err)
@@ -90,6 +88,8 @@ func Save(ctx context.Context, tracked *tracked) error {
 	if err := cmd.Start(); err != nil {
 		return fmt.Errorf("track.Save: %s", err)
 	}
+	app := cmd.Args[0]
+	pid := cmd.Process.Pid
 	log.Printf("track.Save: %s [%s %d]", name, app, pid)
 
 	cancelSave := make(chan struct{})
