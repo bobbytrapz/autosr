@@ -87,11 +87,22 @@ func Save(ctx context.Context, tracked *tracked) error {
 		return fmt.Errorf("track.Save: %s", err)
 	}
 
+	if err := cmd.Start(); err != nil {
+		return fmt.Errorf("track.Save: %s", err)
+	}
+	log.Printf("track.Save: %s [%s %d]", name, app, pid)
+
 	cancelSave := make(chan struct{})
 	tracked.SetCancel(cancelSave)
 
 	exit := make(chan struct{}, 1)
-	// handle canceling downloader
+	// monitor downloader
+	go func() {
+		defer close(exit)
+		cmd.Wait()
+	}()
+
+	// handle closing downloader
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
@@ -126,17 +137,6 @@ func Save(ctx context.Context, tracked *tracked) error {
 				return
 			}
 		}
-	}()
-
-	if err := cmd.Start(); err != nil {
-		return fmt.Errorf("track.Save: %s", err)
-	}
-	log.Printf("track.Save: %s [%s %d]", name, cmd.Args[0], cmd.Process.Pid)
-
-	// monitor downloader
-	go func() {
-		defer close(exit)
-		cmd.Wait()
 	}()
 
 	return nil
@@ -176,7 +176,7 @@ func RunDownloader(ctx context.Context, url, name string) (cmd *exec.Cmd, err er
 		return
 	}
 	cmd.Dir = saveTo
-	downloaderOptions(cmd)
+	setArgs(cmd)
 
 	return cmd, nil
 }
