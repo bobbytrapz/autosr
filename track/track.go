@@ -38,6 +38,8 @@ func Wait() {
 	for _, t := range tracking {
 		t.Cancel()
 	}
+	// kill all child process
+	stopAll()
 	wg.Wait()
 	log.Println("track.Wait: all tasks done")
 }
