@@ -58,15 +58,17 @@ var stop = make(chan struct{}, 1)
 
 var targets = make([]Target, 0)
 
-func check() error {
+func check(ctx context.Context) error {
+	// fix: problem is likely here
 	if len(targets) == 0 {
 		log.Println("showroom.check: no targets")
 		return nil
 	}
 	log.Println("showroom.check:", len(targets), "targets")
 
-	var wg sync.WaitGroup
 	m.RLock()
+	defer m.RUnlock()
+	var wg sync.WaitGroup
 	for _, target := range targets {
 		wg.Add(1)
 		go func(t Target) {
@@ -74,7 +76,7 @@ func check() error {
 
 			// each target gets a separate timeout
 			// check is called by poll so we only check for a little while
-			timeout := time.NewTimer(30 * time.Second)
+			timeout := time.NewTimer(7 * time.Second)
 			defer timeout.Stop()
 
 			// check target's actual room for stream url or upcoming date
@@ -104,18 +106,17 @@ func check() error {
 				case <-timeout.C:
 					log.Println("showroom.check:", t.name, "timeout")
 					return
-				case <-stop:
+				case <-ctx.Done():
 					log.Println("showroom.check:", t.name, "stopped")
 					return
 				}
 			}
 		}(target)
 	}
-	m.RUnlock()
 
 	// wait for each target to finish checking
-	log.Println("showroom.check: waiting...")
 	wg.Wait()
+	log.Println("showroom.check: done")
 
 	return nil
 }
@@ -144,7 +145,9 @@ func Start() (err error) {
 	}
 
 	// watch track list
+	wg.Add(1)
 	go func() {
+		defer wg.Done()
 		w, err := fsnotify.NewWatcher()
 		if err != nil {
 			log.Println("showroom.Start: cannot make watcher:", err)
@@ -182,6 +185,8 @@ func Stop() {
 }
 
 func readTrackList() error {
+	log.Println("showroom.readTrackList: reading...")
+
 	f, err := os.Open(track.ListPath)
 	if err != nil {
 		return fmt.Errorf("showroom.readTrackList: %s", err)

@@ -35,9 +35,9 @@ func CheckNow() {
 }
 
 // Poll allows modules to monitor a website
-func Poll(ctx context.Context, pollfn func() error) error {
+func Poll(ctx context.Context, pollfn func(context.Context) error) error {
 	attempt := func() {
-		err := pollfn()
+		err := pollfn(ctx)
 		if err != nil {
 			// retry if possible
 			e, ok := retry.Check(err)
