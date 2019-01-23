@@ -53,7 +53,7 @@ func readPidAndKill() error {
 	fmt.Printf("autosr (%d)\n", pid)
 	proc.Kill()
 	_, err = proc.Wait()
-	if err != nil {
+	if err != nil && err.Error() != "waitid: no child processes" {
 		return err
 	}
 
