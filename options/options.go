@@ -95,6 +95,11 @@ func init() {
 
 	ConfigPath = configPath
 
+	if err := os.MkdirAll(ConfigPath, 0700); err != nil {
+		fmt.Println("error:", err)
+		return
+	}
+
 	v.SetDefault("save_to", savePath)
 	v.AddConfigPath(configPath)
 
