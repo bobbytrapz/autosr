@@ -92,12 +92,18 @@ func check(ctx context.Context) error {
 			}
 
 			numAttempts := 0
-			e, ok := retry.StringCheck(err)
-			for ; ok; e, ok = retry.StringCheck(err) {
+			_, ok := retry.StringCheck(err)
+			for ; ok; _, ok = retry.StringCheck(err) {
+				// note: we are inspecting the error and hate ourselves
+				if !strings.HasPrefix(err.Error(), "showroom.checkRoom") {
+					log.Println("showroom.check:", t.name, "done")
+					return
+				}
 				select {
 				case <-time.After(backoff.DefaultPolicy.Duration(numAttempts)):
 					numAttempts++
-					streamURL, err = e.Retry()
+					// check for room again
+					streamURL, err = t.checkRoom()
 					if err == nil {
 						if err = track.SnipeTargetAt(t, time.Now()); err != nil {
 							log.Println("showroom.check:", err)
