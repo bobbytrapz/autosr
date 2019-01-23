@@ -117,7 +117,10 @@ Details can be found at https://github.com/bobbytrapz/autosr/LICENSE.
 		defer cancel()
 
 		// wait for all tracking related tasks to complete
-		defer track.Wait()
+		defer func() {
+			track.Wait()
+			fmt.Println("autosr: done")
+		}()
 
 		// start ipc
 		ipc.Start(ctx)
