@@ -18,6 +18,7 @@ package showroom
 import (
 	"bytes"
 	"compress/gzip"
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -53,7 +54,7 @@ func init() {
 	}
 }
 
-func makeRequest(method, url string, body io.Reader, referer string) (req *http.Request, err error) {
+func makeRequest(ctx context.Context, method, url string, body io.Reader, referer string) (req *http.Request, err error) {
 	ua := options.Get("user_agent")
 
 	req, err = http.NewRequest(method, url, body)
@@ -71,6 +72,8 @@ func makeRequest(method, url string, body io.Reader, referer string) (req *http.
 	}
 	req.Header.Add("User-Agent", ua)
 
+	req = req.WithContext(ctx)
+
 	return
 }
 
@@ -78,9 +81,9 @@ func onlivesAPI() string {
 	return fmt.Sprintf("https://www.showroom-live.com/api/live/onlives?_=%d", time.Now().Unix())
 }
 
-func makeOnLivesRequest() (req *http.Request, err error) {
+func makeOnLivesRequest(ctx context.Context) (req *http.Request, err error) {
 	url := fmt.Sprintf("https://www.showroom-live.com/api/live/onlives?_=%d", time.Now().Unix())
-	req, err = makeRequest("get", url, nil, onlivesURL)
+	req, err = makeRequest(ctx, "get", url, nil, onlivesURL)
 	if err != nil {
 		return
 	}
@@ -95,9 +98,9 @@ func makeOnLivesRequest() (req *http.Request, err error) {
 	return req, nil
 }
 
-func makeIsLiveRequest(id int) (req *http.Request, err error) {
+func makeIsLiveRequest(ctx context.Context, id int) (req *http.Request, err error) {
 	url := fmt.Sprintf("https://www.showroom-live.com/room/is_live?room_id=%d", id)
-	req, err = makeRequest("get", url, nil, domainName)
+	req, err = makeRequest(ctx, "get", url, nil, domainName)
 	if err != nil {
 		return
 	}
@@ -110,8 +113,8 @@ func makeIsLiveRequest(id int) (req *http.Request, err error) {
 }
 
 // tells us if a certain showroom user is online
-func checkIsLive(id int) (isLive bool, err error) {
-	req, err := makeIsLiveRequest(id)
+func checkIsLive(ctx context.Context, id int) (isLive bool, err error) {
+	req, err := makeIsLiveRequest(ctx, id)
 	if err != nil {
 		return
 	}
@@ -121,7 +124,7 @@ func checkIsLive(id int) (isLive bool, err error) {
 		err = retry.BoolError{
 			Message: fmt.Sprintf("showroom.checkIsLive: %s", err),
 			Attempt: func() (bool, error) {
-				return checkIsLive(id)
+				return checkIsLive(ctx, id)
 			},
 		}
 
@@ -134,7 +137,7 @@ func checkIsLive(id int) (isLive bool, err error) {
 		err = retry.BoolError{
 			Message: fmt.Sprintf("showroom.checkIsLive: %s", err),
 			Attempt: func() (bool, error) {
-				return checkIsLive(id)
+				return checkIsLive(ctx, id)
 			},
 		}
 		return
@@ -145,7 +148,7 @@ func checkIsLive(id int) (isLive bool, err error) {
 		err = retry.BoolError{
 			Message: fmt.Sprintf("showroom.checkIsLive: %s", err),
 			Attempt: func() (bool, error) {
-				return checkIsLive(id)
+				return checkIsLive(ctx, id)
 			},
 		}
 
@@ -158,8 +161,8 @@ func checkIsLive(id int) (isLive bool, err error) {
 }
 
 // fetch all showrooms
-func fetchAllRooms() (rooms []room, err error) {
-	req, err := makeOnLivesRequest()
+func fetchAllRooms(ctx context.Context) (rooms []room, err error) {
+	req, err := makeOnLivesRequest(ctx)
 	if err != nil {
 		err = fmt.Errorf("showroom.fetchRooms: %s", err)
 		return
@@ -192,8 +195,8 @@ func fetchAllRooms() (rooms []room, err error) {
 }
 
 // information about a user's room is parsed from thier page
-func fetchRoom(link string) (status roomStatus, err error) {
-	req, err := makeRequest("get", link, nil, "")
+func fetchRoom(ctx context.Context, link string) (status roomStatus, err error) {
+	req, err := makeRequest(ctx, "get", link, nil, "")
 	if err != nil {
 		return
 	}
@@ -220,7 +223,7 @@ func fetchRoom(link string) (status roomStatus, err error) {
 }
 
 // CommentURLFromRoomID given an id gives the url comments can be fetched from
-func CommentURLFromRoomID(id int) url.URL {
+func CommentURLFromRoomID(ctx context.Context, id int) url.URL {
 	return url.URL{
 		Scheme: "https",
 		Host:   "www.showroom-live.com",
@@ -229,7 +232,7 @@ func CommentURLFromRoomID(id int) url.URL {
 }
 
 // FetchComments from url
-func FetchComments(id int) []Comment {
+func FetchComments(ctx context.Context, id int) []Comment {
 	return nil
 }
 

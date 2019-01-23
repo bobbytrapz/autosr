@@ -40,7 +40,7 @@ func AddTargetFromURL(ctx context.Context, link string) (bool, error) {
 		return false, fmt.Errorf("showroom.AddTargetFromURL: '%s' %s", link, err)
 	}
 
-	s, err := fetchRoom(link)
+	s, err := fetchRoom(ctx, link)
 	if err != nil {
 		return false, fmt.Errorf("showroom.AddTargetFromURL: '%s' %s", link, err)
 	}
@@ -160,7 +160,7 @@ func (t Target) Check(ctx context.Context) (streamURL string, err error) {
 	// check to see if the user is live
 	// if not just give up now
 	var isLive bool
-	isLive, err = checkIsLive(t.id)
+	isLive, err = checkIsLive(ctx, t.id)
 	if err == nil && !isLive {
 		err = retry.StringError{
 			Message: fmt.Sprintf("%s is not live yet", t.name),
@@ -182,7 +182,7 @@ func (t Target) checkRoom(ctx context.Context) (streamURL string, err error) {
 	wg.Add(1)
 	defer wg.Done()
 	// get the room for this user
-	r, err := fetchRoom(t.link)
+	r, err := fetchRoom(ctx, t.link)
 	if err != nil {
 		err = retry.StringError{
 			Message: fmt.Sprintf("showroom.checkRoom: %s %s", t.name, err),

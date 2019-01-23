@@ -135,9 +135,23 @@ func Start(ctx context.Context) (err error) {
 		return
 	}
 
+	select {
+	case <-ctx.Done():
+		log.Println("showroom.Start:", ctx.Err())
+		return
+	default:
+	}
+
 	if err = track.Poll(ctx, check); err != nil {
 		err = fmt.Errorf("showroom.Start: %s", err)
 		return
+	}
+
+	select {
+	case <-ctx.Done():
+		log.Println("showroom.Start:", ctx.Err())
+		return
+	default:
 	}
 
 	// watch track list
