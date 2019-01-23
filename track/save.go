@@ -177,6 +177,7 @@ func RunDownloader(ctx context.Context, url, name string) (cmd *exec.Cmd, err er
 		return
 	}
 	cmd.Dir = saveTo
+	downloaderOptions(cmd)
 
 	return cmd, nil
 }
