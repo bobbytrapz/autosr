@@ -133,6 +133,7 @@ Details can be found at https://github.com/bobbytrapz/autosr/LICENSE.
 		for {
 			select {
 			case <-sig:
+				signal.Stop(sig)
 				fmt.Println("autosr: caught signal")
 				cancel()
 			case <-ctx.Done():
