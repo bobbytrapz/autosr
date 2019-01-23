@@ -40,15 +40,9 @@ const (
 const backgroundEnvKey = "autosr_is_now_running_in_the_background"
 
 func isRunningInBackground() bool {
-	// get the path of our executable
-	exePath, err := os.Executable()
-	if err != nil {
-		panic(err)
-	}
-
-	// write a pid file
-	pidPath := filepath.Join(filepath.Dir(exePath), pidFileName)
-	_, err = os.Stat(pidPath)
+	// check pid file
+	pidPath := filepath.Join(options.ConfigPath, pidFileName)
+	_, err := os.Stat(pidPath)
 	return err == nil
 }
 
