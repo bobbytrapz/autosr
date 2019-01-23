@@ -17,6 +17,7 @@ package showroom
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -112,7 +113,7 @@ type wsConnection struct {
 	URL url.URL
 }
 
-func connect(w *wsConnection) {
+func connect(ctx context.Context, w *wsConnection) {
 	ua := options.Get("user_agent")
 
 	// dial
@@ -126,7 +127,7 @@ func connect(w *wsConnection) {
 		"User-Agent": []string{ua},
 	}
 	log.Printf("[websocket] dial %s (%v)", w.URL.String(), header)
-	c, _, err := dialer.Dial(w.URL.String(), header)
+	c, _, err := dialer.DialContext(ctx, w.URL.String(), header)
 	if err != nil {
 		panic(err)
 	}
@@ -143,12 +144,11 @@ func connect(w *wsConnection) {
 		log.Println("[websocket] tried to send sub:", err)
 	}
 
-	done := make(chan struct{})
+	done := make(chan struct{}, 1)
 	// read
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-
 		defer close(done)
 		log.Printf("[websocket] read")
 		for {
@@ -180,7 +180,7 @@ func connect(w *wsConnection) {
 				if err := c.WriteMessage(websocket.TextMessage, pingcmd); err != nil {
 					log.Println("[websocket:write] tried to send ping:", err)
 				}
-			case <-stop:
+			case <-ctx.Done():
 				/*
 					// sending quit causes abnormal closure
 					log.Printf("[websocket] %s", quitcmd)
@@ -211,9 +211,9 @@ func connect(w *wsConnection) {
 }
 
 // WatchEvents tracks websockets events
-func WatchEvents() {
+func WatchEvents(ctx context.Context) {
 	// create websocket connection
-	connect(&wsConnection{
+	connect(ctx, &wsConnection{
 		URL: url.URL{
 			Scheme: "wss",
 			Host:   bcsvrHost,
@@ -226,7 +226,7 @@ func WatchEvents() {
 
 		for {
 			select {
-			case <-stop:
+			case <-ctx.Done():
 				log.Println("[WatchEvents] done")
 				return
 			default:

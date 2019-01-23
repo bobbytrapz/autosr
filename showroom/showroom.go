@@ -54,12 +54,10 @@ type Gift struct {
 
 var m sync.RWMutex
 var wg sync.WaitGroup
-var stop = make(chan struct{}, 1)
 
 var targets = make([]Target, 0)
 
 func check(ctx context.Context) error {
-	// fix: problem is likely here
 	if len(targets) == 0 {
 		log.Println("showroom.check: no targets")
 		return nil
@@ -123,9 +121,9 @@ func check(ctx context.Context) error {
 
 // Start showroom module
 func Start(ctx context.Context) (err error) {
+	// clean shutdown
 	go func() {
 		<-ctx.Done()
-		close(stop)
 		log.Println("showroom: finishing...")
 		wg.Wait()
 		log.Println("showroom: done")
@@ -159,8 +157,6 @@ func Start(ctx context.Context) (err error) {
 
 		for {
 			select {
-			case <-stop:
-				return
 			case ev := <-w.Events:
 				log.Println("showroom.Start: update:", ev.Name, ev.Op)
 				if ev.Op == fsnotify.Write || ev.Op == fsnotify.Remove {
