@@ -66,11 +66,11 @@ func check(ctx context.Context) error {
 
 	m.RLock()
 	defer m.RUnlock()
-	var wg sync.WaitGroup
+	var waitCheck sync.WaitGroup
 	for _, target := range targets {
-		wg.Add(1)
+		waitCheck.Add(1)
 		go func(t Target) {
-			defer wg.Done()
+			defer waitCheck.Done()
 
 			// each target gets a separate timeout
 			// check is called by poll so we only check for a little while
@@ -113,8 +113,17 @@ func check(ctx context.Context) error {
 	}
 
 	// wait for each target to finish checking
-	wg.Wait()
-	log.Println("showroom.check: done")
+	done := make(chan struct{}, 1)
+	go func() {
+		defer close(done)
+		waitCheck.Wait()
+	}()
+	select {
+	case <-done:
+		log.Println("showroom.check: done")
+	case <-ctx.Done():
+		log.Println("showroom.check:", ctx.Err())
+	}
 
 	return nil
 }
