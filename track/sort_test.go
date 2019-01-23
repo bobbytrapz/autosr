@@ -16,6 +16,7 @@
 package track
 
 import (
+	"context"
 	"sort"
 	"testing"
 	"time"
@@ -58,7 +59,7 @@ func (t dummy) Link() string {
 }
 
 // Check gives nil if a stream has been found
-func (t dummy) Check() (streamURL string, err error) {
+func (t dummy) Check(context.Context) (streamURL string, err error) {
 	return "", nil
 }
 

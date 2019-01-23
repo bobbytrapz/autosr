@@ -80,13 +80,17 @@ func Save(ctx context.Context, tracked *tracked) error {
 	if err != nil {
 		return fmt.Errorf("track.Save: %s", err)
 	}
+	app := cmd.Args[0]
+	pid := cmd.Process.Pid
 
 	if err := addSave(link, cmd); err != nil {
 		return fmt.Errorf("track.Save: %s", err)
 	}
 
-	exit := make(chan struct{}, 1)
+	cancelSave := make(chan struct{})
+	tracked.SetCancel(cancelSave)
 
+	exit := make(chan struct{}, 1)
 	// handle canceling downloader
 	wg.Add(1)
 	go func() {
@@ -95,16 +99,22 @@ func Save(ctx context.Context, tracked *tracked) error {
 		for {
 			select {
 			case <-ctx.Done():
-				log.Printf("track.Save: %s canceled [%s %d]", name, cmd.Args[0], cmd.Process.Pid)
+			case <-cancelSave:
 				// stop saving now
 				delSave(link)
+				cmd.Process.Kill()
+				err := cmd.Wait()
+				log.Printf("track.Save: %s canceled [%s %d] (%s)", name, app, pid, err)
 				tracked.EndSave(nil)
 				tracked.SetFinishedAt(time.Now())
 				return
 			case <-exit:
-				if hasSave(streamURL) {
+				if hasSave(link) {
 					// something may have gone wrong so try again right now
-					snipeEnded(tracked, time.Now())
+					log.Printf("track.Save: %s exited [%s %d] (%s)", name, app, pid, err)
+					snipeEnded(ctx, tracked, time.Now())
+				} else {
+					log.Printf("track.Save: %s done [%s %d] (%s)", name, app, pid, err)
 				}
 				return
 			}
@@ -119,8 +129,7 @@ func Save(ctx context.Context, tracked *tracked) error {
 	// monitor downloader
 	go func() {
 		defer close(exit)
-		err := cmd.Wait()
-		log.Printf("track.Save: %s done [%s %d] (%s)", name, cmd.Args[0], cmd.Process.Pid, err)
+		cmd.Wait()
 	}()
 
 	return nil

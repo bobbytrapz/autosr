@@ -60,7 +60,7 @@ func delSnipe(link string) {
 }
 
 // SnipeTargetAt snipes a target at the given time
-func SnipeTargetAt(t Target, at time.Time) error {
+func SnipeTargetAt(ctx context.Context, t Target, at time.Time) error {
 	if at.IsZero() {
 		return errors.New("track.SnipeTargetAt: invalid time")
 	}
@@ -70,11 +70,11 @@ func SnipeTargetAt(t Target, at time.Time) error {
 		return fmt.Errorf("track.SnipeTarget: %s", err)
 	}
 
-	return SnipeAt(tracked, at)
+	return SnipeAt(ctx, tracked, at)
 }
 
 // SnipeAt snipes a target at the given time
-func SnipeAt(tracked *tracked, at time.Time) error {
+func SnipeAt(ctx context.Context, tracked *tracked, at time.Time) error {
 	if at.IsZero() {
 		return errors.New("track.SnipeAt: invalid time")
 	}
@@ -90,16 +90,12 @@ func SnipeAt(tracked *tracked, at time.Time) error {
 	addSnipe(link)
 	tracked.SetUpcomingAt(at)
 
-	ctx := context.Background()
-	ctx, cancel := context.WithCancel(ctx)
-	tracked.SetCancel(cancel)
-
 	return snipe(ctx, tracked)
 }
 
 // snipe a stream we think has ended
 // we do not check if it is saving
-func snipeEnded(tracked *tracked, at time.Time) error {
+func snipeEnded(ctx context.Context, tracked *tracked, at time.Time) error {
 	if at.IsZero() {
 		return errors.New("track.SnipeAt: invalid time")
 	}
@@ -110,10 +106,6 @@ func snipeEnded(tracked *tracked, at time.Time) error {
 	}
 
 	tracked.SetUpcomingAt(at)
-
-	ctx := context.Background()
-	ctx, cancel := context.WithCancel(ctx)
-	tracked.SetCancel(cancel)
 
 	return snipe(ctx, tracked)
 }
@@ -149,7 +141,7 @@ func snipe(ctx context.Context, tracked *tracked) error {
 				defer to.Stop()
 
 				// check to see if the target's stream has actually begun
-				url, err := tracked.Check()
+				url, err := tracked.Check(ctx)
 				if err != nil {
 					if e, ok := retry.StringCheck(err); ok {
 						// retry according to backoff policy
@@ -186,7 +178,6 @@ func snipe(ctx context.Context, tracked *tracked) error {
 						}
 					}
 				}
-				// attempt ok
 				log.Println("track.snipe:", name, "found url.")
 				tracked.SetStreamURL(url)
 				tracked.SetUpcomingAt(time.Time{})

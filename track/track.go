@@ -34,18 +34,14 @@ var wg sync.WaitGroup
 // Wait for tracking tasks to finish
 func Wait() {
 	log.Println("track.Wait: finishing...")
-	// cancel all tasks
-	for _, t := range tracking {
-		t.Cancel()
-	}
 	wg.Wait()
 	log.Println("track.Wait: all tasks done")
 }
 
 type tracked struct {
 	sync.RWMutex
-	target Target
-	cancel context.CancelFunc
+	target     Target
+	cancelSave chan struct{}
 
 	// schelduling
 	upcomingAt time.Time
@@ -116,26 +112,26 @@ func (t *tracked) EndSave(err error) {
 	t.target.EndSave(err)
 }
 
-func (t *tracked) Check() (string, error) {
+func (t *tracked) Check(ctx context.Context) (string, error) {
 	if t.target != nil {
-		return t.target.Check()
+		return t.target.Check(ctx)
 	}
 
 	return "", errors.New("target is nil")
 }
 
 func (t *tracked) Cancel() {
-	if t.cancel == nil {
-		return
-	}
-	t.cancel()
+	defer func() {
+		recover()
+	}()
+	close(t.cancelSave)
 }
 
 // SetCancel for tracked streamer
-func (t *tracked) SetCancel(c context.CancelFunc) {
+func (t *tracked) SetCancel(ch chan struct{}) {
 	t.Lock()
 	defer t.Unlock()
-	t.cancel = c
+	t.cancelSave = ch
 }
 
 // IsUpcoming is true if the target has a known upcoming time

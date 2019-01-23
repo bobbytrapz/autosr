@@ -82,10 +82,10 @@ func check(ctx context.Context) error {
 			// check target's actual room for stream url or upcoming date
 			var streamURL string
 			var err error
-			if streamURL, err = t.checkRoom(); err == nil {
+			if streamURL, err = t.checkRoom(ctx); err == nil {
 				log.Println("showroom.check:", t.name, "is live now!", streamURL)
 				// they are live now so snipe them now
-				if err = track.SnipeTargetAt(t, time.Now()); err != nil {
+				if err = track.SnipeTargetAt(ctx, t, time.Now()); err != nil {
 					log.Println("showroom.check:", err)
 				}
 				return
@@ -99,7 +99,7 @@ func check(ctx context.Context) error {
 					numAttempts++
 					streamURL, err = e.Retry()
 					if err == nil {
-						if err = track.SnipeTargetAt(t, time.Now()); err != nil {
+						if err = track.SnipeTargetAt(ctx, t, time.Now()); err != nil {
 							log.Println("showroom.check:", err)
 						}
 					}
@@ -122,19 +122,17 @@ func check(ctx context.Context) error {
 }
 
 // Start showroom module
-func Start() (err error) {
-	ctx := context.Background()
-	ctx, cancel := context.WithCancel(ctx)
+func Start(ctx context.Context) (err error) {
 	go func() {
-		<-stop
-		log.Println("showroom.Stop: finishing...")
-		cancel()
+		<-ctx.Done()
+		close(stop)
+		log.Println("showroom: finishing...")
 		wg.Wait()
-		log.Println("showroom.Stop: done")
+		log.Println("showroom: done")
 	}()
 
 	// read the track list to find out who we are watching
-	if err = readTrackList(); err != nil {
+	if err = readTrackList(ctx); err != nil {
 		err = fmt.Errorf("showroom.Start: %s", err)
 		return
 	}
@@ -166,7 +164,7 @@ func Start() (err error) {
 			case ev := <-w.Events:
 				log.Println("showroom.Start: update:", ev.Name, ev.Op)
 				if ev.Op == fsnotify.Write || ev.Op == fsnotify.Remove {
-					readTrackList()
+					readTrackList(ctx)
 				}
 			case err := <-w.Errors:
 				log.Println("showroom.Start: error:", err)
@@ -179,12 +177,7 @@ func Start() (err error) {
 	return
 }
 
-// Stop cancels context
-func Stop() {
-	close(stop)
-}
-
-func readTrackList() error {
+func readTrackList(ctx context.Context) error {
 	log.Println("showroom.readTrackList: reading...")
 
 	f, err := os.Open(track.ListPath)
@@ -221,11 +214,16 @@ func readTrackList() error {
 	// add targets
 	var wg sync.WaitGroup
 	for url := range lst {
-		// fixme: if an interrupt happens in the middle of this we do not shutdown gracefully
+		select {
+		case <-ctx.Done():
+			log.Println("showroom.readTrackList: cancelled")
+			break
+		default:
+		}
 		wg.Add(1)
 		go func(u string) {
 			defer wg.Done()
-			ok, err := AddTargetFromURL(u)
+			ok, err := AddTargetFromURL(ctx, u)
 			if err != nil {
 				fmt.Println("showroom:", err)
 				return

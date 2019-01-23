@@ -59,6 +59,7 @@ func Poll(ctx context.Context, pollfn func(context.Context) error) error {
 	}
 
 	// make first attempt right away
+	log.Println("track.Poll: first attempt...")
 	attempt()
 
 	// poll

@@ -116,12 +116,10 @@ Details can be found at https://github.com/bobbytrapz/autosr/LICENSE.
 		defer cancel()
 
 		// start ipc
-		ipc.Start()
-		defer ipc.Stop()
+		ipc.Start(ctx)
 
 		// start showroom
-		showroom.Start()
-		defer showroom.Stop()
+		showroom.Start(ctx)
 
 		// wait for all tracking related tasks to complete
 		defer track.Wait()
