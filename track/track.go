@@ -203,9 +203,12 @@ func RemoveTarget(link string) error {
 	m.Lock()
 	defer m.Unlock()
 
-	if _, ok := tracking[link]; !ok {
+	tracked, ok := tracking[link]
+	if !ok {
 		return errors.New("track.RemoveTarget: we are not tracking this target")
 	}
+
+	tracked.Cancel()
 
 	delete(tracking, link)
 
