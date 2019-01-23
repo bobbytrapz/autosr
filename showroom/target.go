@@ -75,10 +75,13 @@ func AddTargetFromURL(link string) (bool, error) {
 	m.Unlock()
 
 	// check target right away
-	if streamURL, err := t.Check(); err == nil {
+	if streamURL, err := t.checkRoom(); err == nil {
 		log.Println("showroom.AddTargetFromURL:", t.name, "is live now!", streamURL)
 		// they are live now so snipe them now
-		track.SnipeTargetAt(t, time.Now())
+		if err = track.SnipeTargetAt(t, time.Now()); err != nil {
+			log.Println("showroom.AddTargetFromURL:", err)
+			return false, nil
+		}
 		return true, nil
 	}
 
@@ -151,9 +154,10 @@ func (t Target) Link() string {
 	return t.link
 }
 
-// Check gives nil if a stream has been found
+// Check gives nil if a stream has been found expects user to possibly be live
 func (t Target) Check() (streamURL string, err error) {
 	// check to see if the user is live
+	// if not just give up now
 	var isLive bool
 	isLive, err = checkIsLive(t.id)
 	if err == nil && !isLive {
@@ -165,6 +169,15 @@ func (t Target) Check() (streamURL string, err error) {
 		return
 	}
 
+	// they are live so check their room
+	return t.checkRoom()
+}
+
+// check the user's actual room page
+// they may not actually be live but we can get the upcoming time as well
+func (t Target) checkRoom() (streamURL string, err error) {
+	wg.Add(1)
+	defer wg.Done()
 	// get the room for this user
 	r, err := fetchRoom(t.link)
 	if err != nil {
@@ -187,8 +200,12 @@ func (t Target) Check() (streamURL string, err error) {
 	if nextLive != "" && nextLive != "TBD" {
 		at := parseUpcomingDate(nextLive)
 
-		// there's a new date set so cancel this process and start a new one
-		track.SnipeTargetAt(t, at)
+		// there's a new date set so start a new one
+		if err = track.SnipeTargetAt(t, at); err != nil {
+			log.Println("showroom.Check:", err)
+
+			return
+		}
 
 		err = fmt.Errorf("%s has a new upcoming time set", t.name)
 
