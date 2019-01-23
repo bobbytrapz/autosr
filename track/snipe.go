@@ -190,8 +190,6 @@ func snipe(ctx context.Context, tracked *tracked) error {
 				log.Println("track.snipe:", name, "found url.")
 				tracked.SetStreamURL(url)
 				tracked.SetUpcomingAt(time.Time{})
-				// if we were saving forget it because we may have a new stream url
-				delSave(link)
 				if err := Save(ctx, tracked); err != nil {
 					log.Println("track.snipe:", err)
 				}

@@ -31,28 +31,26 @@ import (
 
 var saving = struct {
 	sync.RWMutex
-	lookup map[string]bool
+	lookup map[string]*exec.Cmd
 }{
-	lookup: make(map[string]bool),
+	lookup: make(map[string]*exec.Cmd),
 }
 
 func hasSave(link string) bool {
 	saving.RLock()
 	defer saving.RUnlock()
-	return saving.lookup[link]
+	_, ok := saving.lookup[link]
+	return ok
 }
 
-// give true if it is newly added
-func addSave(link string) bool {
+func addSave(link string, cmd *exec.Cmd) error {
 	saving.Lock()
 	defer saving.Unlock()
-
 	if _, ok := saving.lookup[link]; ok {
-		return false
+		return errors.New("track.addSave: stream is already being downloaded")
 	}
-
-	saving.lookup[link] = true
-	return true
+	saving.lookup[link] = cmd
+	return nil
 }
 
 func delSave(link string) {
@@ -70,23 +68,23 @@ func Save(ctx context.Context, tracked *tracked) error {
 		return errors.New("track.Save: no link")
 	}
 
-	url := tracked.StreamURL()
-	if url == "" {
+	streamURL := tracked.StreamURL()
+	if streamURL == "" {
 		return errors.New("track.Save: no stream url")
-	}
-
-	if !addSave(link) {
-		log.Println("track.Save:", name, "already saving")
-		return nil
 	}
 
 	tracked.SetStartedAt(time.Now())
 	tracked.BeginSave()
 
-	cmd, err := RunDownloader(ctx, url, name)
+	cmd, err := RunDownloader(ctx, streamURL, name)
 	if err != nil {
 		return fmt.Errorf("track.Save: %s", err)
 	}
+
+	if err := addSave(link, cmd); err != nil {
+		return fmt.Errorf("track.Save: %s", err)
+	}
+
 	exit := make(chan struct{}, 1)
 
 	// handle canceling downloader
@@ -104,8 +102,10 @@ func Save(ctx context.Context, tracked *tracked) error {
 				tracked.SetFinishedAt(time.Now())
 				return
 			case <-exit:
-				// something may have gone wrong so try again right now
-				snipeEnded(tracked, time.Now())
+				if hasSave(streamURL) {
+					// something may have gone wrong so try again right now
+					snipeEnded(tracked, time.Now())
+				}
 				return
 			}
 		}
@@ -126,17 +126,9 @@ func Save(ctx context.Context, tracked *tracked) error {
 	return nil
 }
 
-var running = make(map[string]*exec.Cmd)
-
-func add(link string, cmd *exec.Cmd) {
-	saving.Lock()
-	defer saving.Unlock()
-	running[link] = cmd
-}
-
 func stopAll() {
 	var wg sync.WaitGroup
-	for link, cmd := range running {
+	for link, cmd := range saving.lookup {
 		wg.Add(1)
 		go func(l string, c *exec.Cmd) {
 			defer wg.Done()
@@ -186,7 +178,5 @@ func RunDownloader(ctx context.Context, url, name string) (cmd *exec.Cmd, err er
 	}
 	cmd.Dir = saveTo
 
-	running[url] = cmd
-
-	return
+	return cmd, nil
 }
