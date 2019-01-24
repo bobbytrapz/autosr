@@ -2,8 +2,7 @@
 
 ![Imgur](https://i.imgur.com/OaO6MZF.png?1)
 
-autosr tracks streamers you are interested in.
-When they go live autosr records the stream.
+autosr tracks streamers you are interested in and records them when they become live.
 
 An external program such as streamlink or livestreamer is required.
 
@@ -42,7 +41,7 @@ Further instructions will be provided soon.
 
 ## Track streamers
 
-Add streamers to track
+Add streamers to track:
 
 ```
 autosr track
@@ -68,9 +67,9 @@ autosr
 You should see the autosr dashboard.
 To exit press 'q'.
 
-Even if you exit autosr is running in the background.
+Even if you exit, autosr will still run in the background.
 
-To stop it run:
+To stop all tracking and recording it run:
 
 ```
 autosr stop
@@ -94,4 +93,14 @@ autosr options
 
 A configuration file should open for you to edit.
 The changes are applied without restarting.
+
+## Help
+
+To see help or controls:
+
+```
+autosr help
+```
+
+
 
