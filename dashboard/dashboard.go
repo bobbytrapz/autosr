@@ -244,10 +244,6 @@ func keys(g *gocui.Gui) (err error) {
 		return
 	}
 
-	if err = g.SetKeybinding("target-list", 'c', gocui.ModNone, cancelTarget); err != nil {
-		return
-	}
-
 	return
 }
 
@@ -322,16 +318,6 @@ func selected(v *gocui.View) track.DisplayRow {
 	_, oy := v.Origin()
 	_, cy := v.Cursor()
 	return table[oy+cy]
-}
-
-func cancelTarget(g *gocui.Gui, v *gocui.View) error {
-	req.SelectURL = selected(v).Link
-
-	if err := call("CancelTarget"); err != nil {
-		return fmt.Errorf("dashboard.cancelTarget: %s", err)
-	}
-	redraw(g)
-	return nil
 }
 
 func openTarget(g *gocui.Gui, v *gocui.View) error {

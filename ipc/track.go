@@ -16,7 +16,6 @@
 package ipc
 
 import (
-	"fmt"
 	"log"
 
 	"github.com/bobbytrapz/autosr/track"
@@ -27,18 +26,5 @@ func (c *Command) CheckNow(req *Dashboard, res *Dashboard) error {
 	replicate(req, res)
 	log.Println("ipc.CheckNow")
 	track.CheckNow()
-	return nil
-}
-
-// CancelTarget a target being sniped or saved
-func (c *Command) CancelTarget(req *Dashboard, res *Dashboard) error {
-	replicate(req, res)
-
-	if status.SelectURL != "" {
-		if err := track.CancelTarget(status.SelectURL); err != nil {
-			return fmt.Errorf("ipc.CancelTarget: %s", err)
-		}
-	}
-
 	return nil
 }
