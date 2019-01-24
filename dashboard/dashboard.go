@@ -296,11 +296,19 @@ func moveDown(g *gocui.Gui, v *gocui.View) error {
 		return nil
 	}
 
+	numSeparators := 0
+	if len(res.TrackTable.Live) > 0 {
+		numSeparators++
+	}
+	if len(res.TrackTable.Upcoming) > 0 {
+		numSeparators++
+	}
 	ox, oy := v.Origin()
 	cx, cy := v.Cursor()
-	if oy+cy+1 > numRows() {
+	if oy+cy-numSeparators+1 > numRows() {
 		return nil
 	}
+
 	if err := v.SetCursor(cx, cy+1); err != nil {
 		if err := v.SetOrigin(ox, oy+1); err != nil {
 			debug(fmt.Sprintf("origin: %d %d", ox, oy+1))
