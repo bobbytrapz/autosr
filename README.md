@@ -8,19 +8,28 @@ An external program such as streamlink or livestreamer is required.
 Currently only SHOWROOM is supported.
 Contributors would be greatly appreciated!
 
-## Installing on Linux or OS X
-
 autosr is a command-line application.
 The following commands should be types into a terminal.
 
 Download the right version from the [release page](https://github.com/bobbytrapz/autosr/releases/tag/v1.0.0-beta)
 
+## Installing on Linux
+
 Install streamlink and autosr
 
 ```
 sudo pip install streamlink
+chmod +x autosr
 sudo mv autosr /usr/local/bin/autosr
-# on OS X
+```
+
+## Installing on OS X
+
+Install streamlink and autosr
+
+```
+sudo pip install streamlink
+chmod +x autosr-osx
 sudo mv autosr-osx /usr/local/bin/autosr
 ```
 
