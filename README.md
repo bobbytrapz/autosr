@@ -1,5 +1,7 @@
 # autosr: Automated Schelduled Recordings
 
+![Imgur](https://i.imgur.com/OaO6MZF.png?1)
+
 autosr tracks streamers you are interested in.
 When they go live autosr records the stream.
 
