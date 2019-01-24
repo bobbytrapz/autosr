@@ -11,7 +11,7 @@ Currently only SHOWROOM is supported.
 Contributors would be greatly appreciated!
 
 autosr is a command-line application.
-The following commands should be types into a terminal.
+The following commands should be typed into a terminal.
 
 Download the right version from the [release page](https://github.com/bobbytrapz/autosr/releases/tag/v1.0.0-beta)
 
