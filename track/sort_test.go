@@ -103,16 +103,15 @@ func TestSort(t *testing.T) {
 		}
 
 		sort.Sort(byUrgency(got))
-		// lexagraphical order is the fallback
 		want := []*tracked{
+			&tracked{
+				target: b,
+			},
 			&tracked{
 				target: c,
 			},
 			&tracked{
 				target: a,
-			},
-			&tracked{
-				target: b,
 			},
 		}
 
