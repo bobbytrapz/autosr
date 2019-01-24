@@ -82,6 +82,11 @@ autosr was written by Bobby (@pibisubukebe) so that he never misses 齊藤京子
 If you have a comment or suggestion please contact @pibisubukebe on Twitter.
 For help or to report a bug visit https://github.com/bobbytrapz/autosr.
 
+Dashboard controls:
+	q - Quit dashboard. User 'autose stop' to actually stop all recording
+	r - Check if any streams are on right away
+	o - Open link to stream in web browser
+
 This program comes with ABSOLUTELY NO WARRANTY;
 This is free software, and you are welcome to redistribute it under certain conditions.
 Details can be found at https://github.com/bobbytrapz/autosr/LICENSE.
