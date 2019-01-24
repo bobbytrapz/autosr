@@ -31,7 +31,7 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	version := fmt.Sprintf("v0.1.0-r%s", repo)
+	version := fmt.Sprintf("v1.0.0-r%s", repo)
 
 	f, err := os.Create("version/version.go")
 	if err != nil {
