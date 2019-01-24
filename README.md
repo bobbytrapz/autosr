@@ -1,4 +1,4 @@
-# autosr: Automated Schelduled Recordings
+# autosr: Automated Scheduled Recordings
 
 ![Imgur](https://i.imgur.com/OaO6MZF.png?1)
 
