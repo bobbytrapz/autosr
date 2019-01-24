@@ -18,6 +18,7 @@ package options
 import (
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"runtime"
 	"sync"
@@ -113,6 +114,29 @@ func init() {
 
 	v.WatchConfig()
 	v.OnConfigChange(func(e fsnotify.Event) {
+		if ok, err := AreValid(); !ok {
+			if err == errInvalidPollRate {
+				v.Set("check_every", 1*time.Minute)
+			}
+		}
 		fmt.Println("config file changed:", e.Name)
 	})
+}
+
+var errInvalidPollRate = fmt.Errorf("error: time must be greater than 30s")
+
+// AreValid is true if the options are valid
+func AreValid() (ok bool, err error) {
+	if v.GetDuration("check_every") < 30*time.Second {
+		err = errInvalidPollRate
+		return
+	}
+
+	_, err = exec.LookPath(v.GetString("download_with"))
+	if err != nil {
+		err = fmt.Errorf("error: could not find downloader: %s", err)
+		return
+	}
+
+	return true, nil
 }

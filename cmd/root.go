@@ -87,6 +87,11 @@ This is free software, and you are welcome to redistribute it under certain cond
 Details can be found at https://github.com/bobbytrapz/autosr/LICENSE.
 `,
 	Run: func(cmd *cobra.Command, args []string) {
+		if ok, err := options.AreValid(); !ok {
+			fmt.Println(err)
+			os.Exit(1)
+		}
+
 		if !shouldRunInForeground && os.Getenv(backgroundEnvKey) == "" {
 			if isRunningInBackground() {
 				dashboard.Run(shouldColorLogo)
