@@ -69,7 +69,7 @@ To exit press 'q'.
 
 Even if you exit, autosr will still run in the background.
 
-To stop all tracking and recording it run:
+To stop all tracking and recording run:
 
 ```
 autosr stop
