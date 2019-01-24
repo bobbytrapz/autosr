@@ -151,8 +151,9 @@ func (t *tracked) CheckStream(ctx context.Context) (string, error) {
 }
 
 func (t *tracked) Cancel() {
-	defer recover()
-	close(t.cancelSave)
+	if t.cancelSave != nil {
+		close(t.cancelSave)
+	}
 }
 
 // SetCancel for tracked streamer
