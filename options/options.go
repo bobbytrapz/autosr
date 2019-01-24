@@ -124,7 +124,6 @@ func init() {
 				v.Set("check_every", 1*time.Minute)
 			}
 		}
-		log.Println("config file changed:", e.Name)
 	})
 }
 
