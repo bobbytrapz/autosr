@@ -165,7 +165,7 @@ func (t *tracked) SetCancel(ch chan struct{}) {
 
 // IsUpcoming is true if the target has a known upcoming time
 func (t *tracked) IsUpcoming() bool {
-	return time.Until(t.UpcomingAt()) > 0
+	return time.Until(t.UpcomingAt().Add(5*time.Minute)) > 0
 }
 
 // IsLive is true if the target is live
