@@ -85,7 +85,7 @@ I recommend using [mpv](https://mpv.io)
 ## Set custom options
 
 The default options should be fine.
-If you want to change them. For example, to use a different stream ripper or change the highlight colors:
+If you want to change them. For example, to use a different stream downloader or change the dashboard's appearance:
 
 ```
 autosr options
@@ -96,7 +96,7 @@ The changes are applied without restarting.
 
 ## Help
 
-To see help or controls:
+To see help or dashboard controls:
 
 ```
 autosr help
