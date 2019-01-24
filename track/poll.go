@@ -77,6 +77,15 @@ func Poll(ctx context.Context, pollfn func(context.Context) error) error {
 				log.Println("track.Poll:", ctx.Err())
 				return
 			case <-tick.C:
+				attempt()
+				// check if poll rate was adjusted
+				p := options.GetDuration("check_every")
+				if p != pollRate {
+					pollRate = p
+					tick.Stop()
+					tick = time.NewTicker(pollRate)
+					log.Println("track.Poll: new poll rate", pollRate)
+				}
 			case <-check:
 				attempt()
 				// check if poll rate was adjusted
