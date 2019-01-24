@@ -13,50 +13,21 @@ Contributors would be greatly appreciated!
 autosr is a command-line application.
 The following commands should be types into a terminal.
 
-Download the right version
-
-```
-# Linux
-curl -O https://raw.githubusercontent.com/bobbytrapz/autosr/dist/linux/autosr
-```
-
-```
-# OS X
-curl -O https://raw.githubusercontent.com/bobbytrapz/autosr/dist/osx/autosr
-```
+Download the right version from the [release page](https://github.com/bobbytrapz/autosr/releases/tag/v1.0.0-beta)
 
 Install streamlink and autosr
 
 ```
-python -m pip install --user streamlink
-sudo mv autosr /usr/local/bin
+sudo pip install streamlink
+sudo mv autosr /usr/local/bin/autosr
+# on OS X
+sudo mv autosr-osx /usr/local/bin/autosr
 ```
 
 ## Installing on Windows
 
-Open Powershell
-
-Press Windows key + R to open Run menu
-Type: powershell
-Hit enter and powershell should open.
-
-From this point on all the instructions should be run in powershell.
-
-First we need to install scoop.
-According to their [their website](https://scoop.sh) we can do this:
-
-```
-iex (new-object net.webclient).downloadstring('https://get.scoop.sh')
-```
-
-For help refer to [documentation](https://github.com/lukesampson/scoop/wiki/Quick-Start)
-
-After scoop is installed we can install autosr.
-
-```
-scoop bucket add bobbytrapz https://github.com/bobbytrapz/scoop-bucket
-scoop install autosr streamlink
-```
+You can download the binary from the [release page](https://github.com/bobbytrapz/autosr/releases/tag/v1.0.0-beta).
+Further instructions will be provided soon.
 
 ## Track streamers
 
@@ -68,6 +39,7 @@ autosr track
 
 A text editor will open.
 Put the url of the streamer you are interested in one line at a time.
+The changes are applied without restarting.
 For example,
 
 ```
@@ -103,16 +75,12 @@ I recommend using [mpv](https://mpv.io)
 ## Set custom options
 
 The default options should be fine.
-If you want to change them. For example, to use a different stream ripper:
+If you want to change them. For example, to use a different stream ripper or change the highlight colors:
 
 ```
 autosr options
 ```
 
 A configuration file should open for you to edit.
+The changes are applied without restarting.
 
-If autosr is running in the background you can have it reload the options using:
-
-```
-autosr reload
-```
