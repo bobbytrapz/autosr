@@ -66,7 +66,6 @@ type tracked struct {
 	cancelSave chan struct{}
 
 	// schelduling
-	upcomingAt time.Time
 	startedAt  time.Time
 	finishedAt time.Time
 
@@ -235,14 +234,18 @@ func CancelTarget(link string) error {
 func (t *tracked) UpcomingAt() time.Time {
 	t.RLock()
 	defer t.RUnlock()
-	return t.upcomingAt
-}
 
-// SetUpcomingAt for target
-func (t *tracked) SetUpcomingAt(at time.Time) {
-	t.Lock()
-	defer t.Unlock()
-	t.upcomingAt = at
+	var at time.Time
+	now := time.Now()
+	for _, t := range sniping.lookup[t.Link()] {
+		if at.IsZero() {
+			at = t
+		} else if t.After(now) && t.Before(at) {
+			at = t
+		}
+	}
+
+	return at
 }
 
 // StartedAt for target

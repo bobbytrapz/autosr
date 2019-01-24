@@ -134,8 +134,15 @@ func TestSort(t *testing.T) {
 				target: c,
 			},
 		}
-		got[1].SetStartedAt(time.Now())
-		got[2].SetUpcomingAt(time.Now().Add(15 * time.Minute))
+		now := time.Now()
+		addSnipe(got[1].Link(), now)
+		addSnipe(got[2].Link(), now.Add(15*time.Minute))
+
+		diff := got[2].UpcomingAt().Sub(got[1].UpcomingAt())
+		if diff != 15*time.Minute {
+			t.Error("want", 15*time.Minute, "got", diff)
+		}
+
 		sort.Sort(byUrgency(got))
 
 		want := []*tracked{
