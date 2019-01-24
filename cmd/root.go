@@ -74,8 +74,8 @@ func runSelfInBackground() (*exec.Cmd, error) {
 
 var rootCmd = &cobra.Command{
 	Use:   "autosr",
-	Short: "autosr: Automate Scheduled Recordings",
-	Long: `autosr: Automate Scheduled Recordings
+	Short: "autosr: Automated Scheduled Recordings",
+	Long: `autosr: Automated Scheduled Recordings
 autosr tracks users and records their livestreams when they start.
 autosr was written by Bobby (@pibisubukebe) so that he never misses 齊藤京子.
 
