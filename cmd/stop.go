@@ -28,6 +28,7 @@ import (
 )
 
 var errNoChildProcesses = "waitid: no child processes"
+var errNoChildProcessesOSX = "wait: no child processes"
 
 func readPidAndKill() error {
 	pidPath := filepath.Join(options.ConfigPath, pidFileName)
@@ -55,7 +56,7 @@ func readPidAndKill() error {
 	fmt.Printf("autosr (%d)\n", pid)
 	proc.Kill()
 	_, err = proc.Wait()
-	if err == nil || err.Error() == errNoChildProcesses {
+	if err == nil || err.Error() == errNoChildProcesses || err.Error() == errNoChildProcessesOSX {
 		return nil
 	}
 	return err
