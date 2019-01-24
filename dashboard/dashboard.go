@@ -24,6 +24,7 @@ import (
 	"time"
 
 	"github.com/bobbytrapz/autosr/ipc"
+	"github.com/bobbytrapz/autosr/options"
 	"github.com/bobbytrapz/autosr/track"
 	"github.com/jroimartin/gocui"
 )
@@ -154,8 +155,8 @@ func drawTargetList(v *gocui.View) {
 
 		return
 	}
-	v.SelBgColor = gocui.ColorGreen
-	v.SelFgColor = gocui.ColorBlack
+	v.SelBgColor = colorFromString(options.Get("select_fg_color"))
+	v.SelFgColor = colorFromString(options.Get("select_bg_color"))
 
 	table = nil
 	for _, row := range res.TrackTable.Live {

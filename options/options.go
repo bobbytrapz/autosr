@@ -59,6 +59,8 @@ const (
 	defaultStreamDownloader = "streamlink"
 	defaultListenAddr       = "0.0.0.0:4846"
 	defaultPollRate         = 120 * time.Second
+	defaultSelectFGColor    = "black"
+	defaultSelectBGColor    = "white"
 )
 
 // ConfigPath is the path where track list and config file are kept
@@ -72,6 +74,8 @@ func init() {
 	v.SetDefault("user_agent", defaultUserAgent)
 	v.SetDefault("download_with", defaultStreamDownloader)
 	v.SetDefault("listen_on", defaultListenAddr)
+	v.SetDefault("select_fg_color", defaultSelectFGColor)
+	v.SetDefault("select_bg_color", defaultSelectBGColor)
 
 	v.SetConfigType(Format)
 	v.SetConfigName(Filename)
