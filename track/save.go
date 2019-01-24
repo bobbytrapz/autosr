@@ -128,12 +128,13 @@ func Save(ctx context.Context, tracked *tracked) error {
 				return
 			case <-exit:
 				if hasSave(link) {
-					delSave(link)
 					// something may have gone wrong so try again right now
-					log.Printf("track.Save: %s exited [%s %d] (%s)", name, app, pid, err)
+					log.Printf("track.Save: %s exited [%s %d]", name, app, pid)
 					snipeEnded(ctx, tracked, time.Now())
 				} else {
-					log.Printf("track.Save: %s done [%s %d] (%s)", name, app, pid, err)
+					log.Printf("track.Save: %s exit ok [%s %d]", name, app, pid)
+					tracked.EndSave(nil)
+					tracked.SetFinishedAt(time.Now())
 				}
 				return
 			}

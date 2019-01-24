@@ -27,6 +27,9 @@ import (
 	"github.com/bobbytrapz/autosr/retry"
 )
 
+var errSnipeTimeout = errors.New("track.snipe: timeout")
+var errSnipeNotFound = errors.New("track.snipe: did not find a stream url")
+
 var sniping = struct {
 	sync.RWMutex
 	lookup map[string]chan struct{}
@@ -112,8 +115,17 @@ func snipeEnded(ctx context.Context, tracked *tracked, at time.Time) error {
 		return errors.New("track.snipeEnded: invalid time")
 	}
 
-	if hasSnipe(tracked.Link()) {
-		log.Println("track.snipeEnded:", tracked.Name(), "already sniping")
+	name := tracked.Name()
+	link := tracked.Link()
+
+	if hasSnipe(link) {
+		log.Println("track.snipeEnded:", name, "already sniping")
+		// so consider this stream has finished
+		tracked.SetFinishedAt(at)
+		log.Printf("track.snipe: %s finished at %s", name, at)
+		// end save
+		delSave(link)
+		tracked.EndSave(nil)
 		return nil
 	}
 	tracked.SetUpcomingAt(at)
@@ -159,11 +171,33 @@ func snipe(ctx context.Context, tracked *tracked) error {
 				var ok bool
 				var err error
 
+				// handle finishing saves
+				defer func() {
+					// we are saving but we timed out or did not find a url
+					if hasSave(link) && (err == errSnipeNotFound || err == errSnipeTimeout) {
+						if err == errSnipeTimeout {
+							// so we were finished minutes ago
+							at := time.Now().Add(-timeout)
+							tracked.SetFinishedAt(at)
+							log.Printf("track.snipe: %s was finished at %s", name, at)
+						} else if err == errSnipeNotFound {
+							// no stream url so consider us finished now
+							tracked.SetFinishedAt(time.Now())
+							log.Printf("track.snipe: %s finished now", name)
+						}
+
+						// end save
+						delSave(link)
+						tracked.EndSave(nil)
+					}
+				}()
+
 				// check if the user is online
 				var isLive bool
 				var liveErr retry.BoolRetryable
 				numAttempts := 0
 				isLive, err = tracked.CheckLive(ctx)
+				liveErr, ok = retry.BoolCheck(err)
 				for ; ok; liveErr, ok = retry.BoolCheck(err) {
 					ok, err = liveErr.Retry()
 					select {
@@ -175,6 +209,7 @@ func snipe(ctx context.Context, tracked *tracked) error {
 						}
 					case <-to.C:
 						log.Println("track.snipe:", name, "timeout")
+						err = errSnipeTimeout
 						return
 					case <-ctx.Done():
 						log.Println("track.snipe:", name, ctx.Err())
@@ -188,6 +223,7 @@ func snipe(ctx context.Context, tracked *tracked) error {
 				var urlErr retry.StringRetryable
 				numAttempts = 0
 				url, err = tracked.CheckStream(ctx)
+				urlErr, ok = retry.StringCheck(err)
 				for ; ok; urlErr, ok = retry.StringCheck(err) {
 					select {
 					case <-time.After(backoff.DefaultPolicy.Duration(numAttempts)):
@@ -201,34 +237,29 @@ func snipe(ctx context.Context, tracked *tracked) error {
 						log.Println("track.snipe:", name, ctx.Err())
 						return
 					case <-to.C:
-						link := tracked.Link()
-						log.Println("track.snipe:", name, "timeout")
-						if hasSave(link) {
-							// so we were finished minutes ago
-							at := time.Now().Add(-timeout)
-							tracked.SetFinishedAt(at)
-							log.Printf("track.snipe: %s finished at %s", name, at)
-							// end save
-							delSave(link)
-							tracked.EndSave(nil)
-						}
+						log.Println("track.snipe:", name, "timeout while looking for stream url")
+						err = errSnipeTimeout
 						return
 					}
 				}
 
 				if err != nil {
-					// we failed
-					log.Println("track.snipe:", "did not find url:", err)
-					tracked.SetUpcomingAt(time.Time{})
+					// we failed to find something to save
+					err = errSnipeNotFound
+					log.Println("track.snipe:", name, "did not find url")
 					return
 				}
 
 				log.Println("track.snipe:", name, "found url.")
 				tracked.SetStreamURL(url)
-				tracked.SetUpcomingAt(time.Time{})
 				if err := Save(ctx, tracked); err != nil {
 					log.Println("track.snipe:", err)
+					return
 				}
+
+				// saving so end all sniping for this link
+				delSnipe(link)
+
 				return
 			}
 		}
