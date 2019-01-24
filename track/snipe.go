@@ -109,11 +109,11 @@ func SnipeAt(ctx context.Context, tracked *tracked, at time.Time) error {
 // we do not check if it is saving
 func snipeEnded(ctx context.Context, tracked *tracked, at time.Time) error {
 	if at.IsZero() {
-		return errors.New("track.SnipeAt: invalid time")
+		return errors.New("track.snipeEnded: invalid time")
 	}
 
 	if hasSnipe(tracked.Link()) {
-		log.Println("track.Snipe:", tracked.Name(), "already sniping")
+		log.Println("track.snipeEnded:", tracked.Name(), "already sniping")
 		return nil
 	}
 	tracked.SetUpcomingAt(at)
