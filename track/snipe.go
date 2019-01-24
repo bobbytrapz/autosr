@@ -202,6 +202,7 @@ func snipe(ctx context.Context, tracked *tracked) error {
 				if err != nil {
 					// we failed
 					log.Println("track.snipe:", "did not find url:", err)
+					tracked.SetUpcomingAt(time.Time{})
 					return
 				}
 
