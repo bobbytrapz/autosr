@@ -220,12 +220,12 @@ func CancelTarget(link string) error {
 	m.Lock()
 	defer m.Unlock()
 
-	t, ok := tracking[link]
+	tracked, ok := tracking[link]
 	if !ok {
 		return errors.New("track.CancelTarget: we are not tracking this target")
 	}
 
-	t.Cancel()
+	tracked.Cancel()
 
 	return nil
 }
