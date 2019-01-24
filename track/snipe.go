@@ -85,19 +85,19 @@ func SnipeAt(ctx context.Context, tracked *tracked, at time.Time) error {
 	log.Println("track.SnipeAt:", tracked.Name(), "at", at.Format(time.UnixDate))
 
 	if at == tracked.UpcomingAt() {
-		log.Println("track.Snipe:", tracked.Name(), "already sniping at given time")
+		log.Println("track.SnipeAt:", tracked.Name(), "already sniping at given time")
 		return nil
 	}
 
 	link := tracked.Link()
 
 	if hasSave(link) {
-		log.Println("track.Snipe:", tracked.Name(), "already saving")
+		log.Println("track.SnipeAt:", tracked.Name(), "already saving")
 		return nil
 	}
 
 	if hasSnipe(link) {
-		log.Println("track.Snipe:", tracked.Name(), "sniping updated time")
+		log.Println("track.SnipeAt:", tracked.Name(), "sniping updated time")
 		delSnipe(link)
 	}
 	tracked.SetUpcomingAt(at)
