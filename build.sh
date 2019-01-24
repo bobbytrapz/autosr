@@ -17,5 +17,5 @@ name="autosr"
 go generate
 go test ./...
 GOOS=darwin go build -o dist/osx/$name
-GOOS=linux go build -o dist/linux/$name
+GOOS=linux go build -o dist/linux/$name-osx
 GOOS=windows go build -o dist/windows/${name}.exe
