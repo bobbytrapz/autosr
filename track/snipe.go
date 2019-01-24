@@ -29,19 +29,20 @@ import (
 
 var sniping = struct {
 	sync.RWMutex
-	lookup map[string]bool
+	lookup map[string]chan struct{}
 }{
-	lookup: make(map[string]bool),
+	lookup: make(map[string]chan struct{}),
 }
 
 func hasSnipe(link string) bool {
 	sniping.RLock()
 	defer sniping.RUnlock()
-	return sniping.lookup[link]
+	_, ok := sniping.lookup[link]
+	return ok
 }
 
 // give true if it is newly added
-func addSnipe(link string) bool {
+func addSnipe(link string, cancel chan struct{}) bool {
 	sniping.Lock()
 	defer sniping.Unlock()
 
@@ -49,13 +50,16 @@ func addSnipe(link string) bool {
 		return false
 	}
 
-	sniping.lookup[link] = true
+	sniping.lookup[link] = cancel
 	return true
 }
 
 func delSnipe(link string) {
 	sniping.Lock()
 	defer sniping.Unlock()
+	if cancel, ok := sniping.lookup[link]; ok {
+		close(cancel)
+	}
 	delete(sniping.lookup, link)
 }
 
@@ -80,6 +84,11 @@ func SnipeAt(ctx context.Context, tracked *tracked, at time.Time) error {
 	}
 	log.Println("track.SnipeAt:", tracked.Name(), "at", at.Format(time.UnixDate))
 
+	if at == tracked.UpcomingAt() {
+		log.Println("track.Snipe:", tracked.Name(), "already sniping at given time")
+		return nil
+	}
+
 	link := tracked.Link()
 
 	if hasSave(link) {
@@ -87,7 +96,10 @@ func SnipeAt(ctx context.Context, tracked *tracked, at time.Time) error {
 		return nil
 	}
 
-	addSnipe(link)
+	if hasSnipe(link) {
+		log.Println("track.Snipe:", tracked.Name(), "sniping updated time")
+		delSnipe(link)
+	}
 	tracked.SetUpcomingAt(at)
 
 	return snipe(ctx, tracked)
@@ -100,7 +112,7 @@ func snipeEnded(ctx context.Context, tracked *tracked, at time.Time) error {
 		return errors.New("track.SnipeAt: invalid time")
 	}
 
-	if !addSnipe(tracked.Link()) {
+	if hasSnipe(tracked.Link()) {
 		log.Println("track.Snipe:", tracked.Name(), "already sniping")
 		return nil
 	}
@@ -112,9 +124,12 @@ func snipeEnded(ctx context.Context, tracked *tracked, at time.Time) error {
 func snipe(ctx context.Context, tracked *tracked) error {
 	tracked.BeginSnipe()
 	upcomingAt := tracked.UpcomingAt()
+	cancelSnipe := make(chan struct{}, 1)
 
 	name := tracked.Name()
 	link := tracked.Link()
+
+	addSnipe(link, cancelSnipe)
 
 	// snipe target
 	wg.Add(1)
@@ -122,7 +137,6 @@ func snipe(ctx context.Context, tracked *tracked) error {
 		defer wg.Done()
 
 		log.Println("track.snipe:", name)
-		defer delSnipe(link)
 
 		// wait until we expect the target to stream
 		check := time.NewTimer(time.Until(upcomingAt))
@@ -132,6 +146,9 @@ func snipe(ctx context.Context, tracked *tracked) error {
 			select {
 			case <-ctx.Done():
 				log.Println("track.snipe:", name, ctx.Err())
+				return
+			case <-cancelSnipe:
+				log.Println("track.snipe:", name, "cancelled")
 				return
 			case <-check.C:
 				// set timeout for sniping
