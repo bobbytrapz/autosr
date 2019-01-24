@@ -17,6 +17,7 @@ package options
 
 import (
 	"fmt"
+	"log"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -123,7 +124,7 @@ func init() {
 				v.Set("check_every", 1*time.Minute)
 			}
 		}
-		fmt.Println("config file changed:", e.Name)
+		log.Println("config file changed:", e.Name)
 	})
 }
 
