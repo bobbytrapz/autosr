@@ -34,10 +34,23 @@ func CheckNow() {
 	check <- 1
 }
 
-// Poll allows modules to monitor a website
-func Poll(ctx context.Context, pollfn func(context.Context) error) error {
+func beginPoll(ctx context.Context) error {
+	for _, m := range modules {
+		log.Println("track.beginPoll:", m.Hostname())
+		if err := poll(ctx, m); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+// allows a module to monitor a website
+func poll(ctx context.Context, module Module) error {
+	hostname := module.Hostname()
+
 	attempt := func() {
-		err := pollfn(ctx)
+		err := module.CheckUpcoming(ctx)
 		if err != nil {
 			// retry if possible
 			e, ok := retry.Check(err)
@@ -45,7 +58,7 @@ func Poll(ctx context.Context, pollfn func(context.Context) error) error {
 			for ; ok; e, ok = retry.Check(err) {
 				select {
 				case <-ctx.Done():
-					log.Println("track.Poll:", ctx.Err())
+					log.Println("track.poll:", hostname, ctx.Err())
 					return
 				case <-time.After(backoff.DefaultPolicy.Duration(numAttempts)):
 					numAttempts++
@@ -53,14 +66,14 @@ func Poll(ctx context.Context, pollfn func(context.Context) error) error {
 					if err == nil {
 						break
 					}
-					log.Println("track.Poll:", err)
+					log.Println("track.poll:", hostname, err)
 				}
 			}
 		}
 	}
 
 	// make first attempt right away
-	log.Println("track.Poll: first attempt...")
+	log.Println("track.poll:", hostname, "first attempt...")
 	attempt()
 
 	// poll
@@ -68,13 +81,13 @@ func Poll(ctx context.Context, pollfn func(context.Context) error) error {
 		defer close(check)
 
 		pollRate := options.GetDuration("check_every")
-		log.Println("track.Poll:", pollRate)
+		log.Println("track.poll:", hostname, pollRate)
 		tick := time.NewTicker(pollRate)
 		defer tick.Stop()
 		for {
 			select {
 			case <-ctx.Done():
-				log.Println("track.Poll:", ctx.Err())
+				log.Println("track.poll:", hostname, ctx.Err())
 				return
 			case <-tick.C:
 				attempt()
@@ -84,7 +97,7 @@ func Poll(ctx context.Context, pollfn func(context.Context) error) error {
 					pollRate = p
 					tick.Stop()
 					tick = time.NewTicker(pollRate)
-					log.Println("track.Poll: new poll rate", pollRate)
+					log.Println("track.poll:", hostname, "new poll rate", pollRate)
 				}
 			case <-check:
 				attempt()
@@ -94,7 +107,7 @@ func Poll(ctx context.Context, pollfn func(context.Context) error) error {
 					pollRate = p
 					tick.Stop()
 					tick = time.NewTicker(pollRate)
-					log.Println("track.Poll: new poll rate", pollRate)
+					log.Println("track.poll:", hostname, "new poll rate", pollRate)
 				}
 			}
 		}
