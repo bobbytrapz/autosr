@@ -1,6 +1,6 @@
 # autosr: Automated Scheduled Recordings
 
-![Imgur](https://i.imgur.com/OaO6MZF.png?1)
+![Imgur](https://i.imgur.com/mtiFUZ1.png?1)
 
 autosr tracks streamers you are interested in and records them when they become live.
 
