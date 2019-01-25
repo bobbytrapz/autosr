@@ -117,7 +117,6 @@ func SnipeAt(ctx context.Context, tracked *tracked, at time.Time) error {
 	}
 
 	go snipe(ctx, tracked, at)
-	tracked.BeginSnipe()
 
 	return nil
 }
@@ -163,7 +162,7 @@ func snipe(ctx context.Context, tracked *tracked, upcomingAt time.Time) (err err
 	link := tracked.Link()
 
 	addSnipe(link, upcomingAt)
-
+	tracked.BeginSnipe()
 	log.Println("track.snipe:", name)
 
 	// wait until we expect the target to stream
