@@ -71,9 +71,9 @@ func AddTargetFromURL(ctx context.Context, link string) (bool, error) {
 		return false, nil
 	}
 
-	m.Lock()
+	rw.Lock()
 	targets = append(targets, t)
-	m.Unlock()
+	rw.Unlock()
 
 	// check target right away
 	if streamURL, err := t.CheckStream(ctx); err == nil {
@@ -97,7 +97,7 @@ func RemoveTargetFromURL(link string) (bool, error) {
 		return false, nil
 	}
 
-	m.Lock()
+	rw.Lock()
 	n := 0
 	for ; n < len(targets); n++ {
 		if targets[n].link == link {
@@ -107,7 +107,7 @@ func RemoveTargetFromURL(link string) (bool, error) {
 	if n < len(targets) {
 		targets = append(targets[:n], targets[n+1:]...)
 	}
-	m.Unlock()
+	rw.Unlock()
 
 	return true, nil
 }
