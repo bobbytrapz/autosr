@@ -51,6 +51,11 @@ func Start(ctx context.Context) error {
 		return err
 	}
 
+	if err := beginPoll(ctx); err != nil {
+		err = fmt.Errorf("track.Start: %s", err)
+		return err
+	}
+
 	// watch track list
 	Add(1)
 	go func() {
