@@ -92,11 +92,11 @@ func Save(ctx context.Context, tracked *tracked) error {
 	cancelSave := make(chan struct{})
 	tracked.SetCancel(cancelSave)
 
-	exit := make(chan struct{}, 1)
+	exit := make(chan error, 1)
 	// monitor downloader
 	go func() {
-		defer close(exit)
-		cmd.Wait()
+		err := cmd.Wait()
+		exit <- err
 	}()
 
 	// handle closing downloader
@@ -119,14 +119,14 @@ func Save(ctx context.Context, tracked *tracked) error {
 				tracked.SetFinishedAt(time.Now())
 				log.Printf("track.Save: %s canceled [%s %d] (%s)", name, app, pid, err)
 				return
-			case <-exit:
-				if hasSave(link) {
+			case err := <-exit:
+				if err != nil {
 					// something may have gone wrong so try again right now
 					log.Printf("track.Save: %s exited [%s %d]", name, app, pid)
 					snipeMaybeEnded(ctx, tracked)
 				} else {
-					tracked.SetFinishedAt(time.Now())
 					log.Printf("track.Save: %s exit ok [%s %d]", name, app, pid)
+					tracked.SetFinishedAt(time.Now())
 				}
 				return
 			}
