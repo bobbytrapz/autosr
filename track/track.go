@@ -18,13 +18,14 @@ package track
 import (
 	"context"
 	"errors"
+	"fmt"
 	"log"
+	"net/url"
 	"os"
-	"path/filepath"
 	"sync"
 	"time"
 
-	"github.com/bobbytrapz/autosr/options"
+	"github.com/fsnotify/fsnotify"
 )
 
 var rw sync.RWMutex
@@ -40,6 +41,48 @@ func Add(delta int) {
 // Done removes a task
 func Done() {
 	wg.Done()
+}
+
+// Start tracking
+func Start(ctx context.Context) error {
+	// read the track list to find out who we are watching
+	if err := readList(ctx); err != nil {
+		err = fmt.Errorf("track.Start: %s", err)
+		return err
+	}
+
+	// watch track list
+	Add(1)
+	go func() {
+		defer Done()
+		w, err := fsnotify.NewWatcher()
+		if err != nil {
+			log.Println("track.Start: cannot make watcher:", err)
+			return
+		}
+
+		if err := w.Add(listPath); err != nil {
+			log.Println("track.Start: cannot watch track list:", err)
+			return
+		}
+
+		for {
+			select {
+			case <-ctx.Done():
+				log.Println("track.Start:", ctx.Err())
+				return
+			case ev := <-w.Events:
+				log.Println("track.Start: update:", ev.Name, ev.Op)
+				if ev.Op == fsnotify.Write || ev.Op == fsnotify.Remove {
+					readList(ctx)
+				}
+			case err := <-w.Errors:
+				log.Println("track.Start: error:", err)
+			}
+		}
+	}()
+
+	return nil
 }
 
 // Wait for tracking tasks to finish
@@ -183,15 +226,35 @@ func (t *tracked) IsOffline() bool {
 }
 
 // AddTarget for tracking
-func AddTarget(target Target) error {
+func AddTarget(ctx context.Context, link string) error {
 	rw.Lock()
 	defer rw.Unlock()
 
-	if _, ok := tracking[target.Link()]; ok {
+	if _, ok := tracking[link]; ok {
 		return errors.New("track.AddTarget: we are already tracking this target")
 	}
 
-	tracking[target.Link()] = &tracked{
+	u, err := url.Parse(link)
+	if err != nil {
+		return fmt.Errorf("track.AddTarget: %s", err)
+	}
+
+	host := u.Hostname()
+	m, err := FindModule(host)
+	if err != nil {
+		return err
+	}
+
+	target, err := m.AddTarget(ctx, link)
+	if err != nil {
+		return fmt.Errorf("track.AddTarget: %s", err)
+	}
+	if target == nil {
+		return errors.New("track.AddTarget: target is nil")
+	}
+
+	fmt.Println(host, ": added", link)
+	tracking[link] = &tracked{
 		target: target,
 	}
 
@@ -199,7 +262,7 @@ func AddTarget(target Target) error {
 }
 
 // RemoveTarget from tracking
-func RemoveTarget(link string) error {
+func RemoveTarget(ctx context.Context, link string) error {
 	rw.Lock()
 	defer rw.Unlock()
 
@@ -208,8 +271,27 @@ func RemoveTarget(link string) error {
 		return errors.New("track.RemoveTarget: we are not tracking this target")
 	}
 
-	tracked.Cancel()
+	u, err := url.Parse(link)
+	if err != nil {
+		return fmt.Errorf("track.RemoveTarget: %s", err)
+	}
 
+	host := u.Hostname()
+	m, err := FindModule(host)
+	if err != nil {
+		return err
+	}
+
+	target, err := m.RemoveTarget(ctx, link)
+	if err != nil {
+		return fmt.Errorf("track.RemoveTarget: %s", err)
+	}
+	if target == nil {
+		return errors.New("track.RemoveTarget: target is nil")
+	}
+
+	fmt.Println(host, ": removed", link)
+	tracked.Cancel()
 	delete(tracking, link)
 
 	return nil
@@ -326,6 +408,3 @@ func getTracked(link string) (tracked *tracked, err error) {
 
 	return
 }
-
-// ListPath to list of urls to watch
-var ListPath = filepath.Join(options.ConfigPath, "track.list")
