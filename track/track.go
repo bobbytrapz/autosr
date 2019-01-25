@@ -270,7 +270,7 @@ func (t *tracked) SetStartedAt(at time.Time) error {
 
 	t.startedAt = at
 
-	t.target.EndSave()
+	t.target.BeginSave()
 
 	return nil
 }
