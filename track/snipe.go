@@ -150,9 +150,6 @@ func snipeMaybeEnded(ctx context.Context, tracked *tracked) error {
 			tracked.SetFinishedAt(time.Now())
 			log.Printf("track.snipeMaybeEnded: %s finished now", name)
 		}
-
-		// end save
-		tracked.EndSave(nil)
 	}
 
 	return err

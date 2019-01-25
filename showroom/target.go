@@ -135,7 +135,7 @@ func (t Target) BeginSave() {
 }
 
 // EndSave callback
-func (t Target) EndSave(err error) {
+func (t Target) EndSave() {
 	log.Println("showroom.EndSave:", t.name)
 	return
 }

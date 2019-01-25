@@ -39,7 +39,7 @@ func (t dummy) BeginSave() {
 }
 
 // EndSave callback
-func (t dummy) EndSave(err error) {
+func (t dummy) EndSave() {
 	return
 }
 

@@ -41,5 +41,5 @@ type Target interface {
 	// callback when save starts
 	BeginSave()
 	// callback when save ends
-	EndSave(error)
+	EndSave()
 }

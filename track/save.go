@@ -114,27 +114,22 @@ func Save(ctx context.Context, tracked *tracked) error {
 				err := cmd.Wait()
 				delSave(link)
 				log.Printf("track.Save: %s %s [%s %d] (%s)", name, ctx.Err(), app, pid, err)
-				tracked.EndSave(nil)
 				tracked.SetFinishedAt(time.Now())
 				return
 			case <-cancelSave:
 				// we have been selected for cancellation
 				cmd.Process.Kill()
 				err := cmd.Wait()
-				delSave(link)
-				log.Printf("track.Save: %s canceled [%s %d] (%s)", name, app, pid, err)
-				tracked.EndSave(nil)
 				tracked.SetFinishedAt(time.Now())
+				log.Printf("track.Save: %s canceled [%s %d] (%s)", name, app, pid, err)
 				return
 			case <-exit:
 				if hasSave(link) {
 					// something may have gone wrong so try again right now
 					log.Printf("track.Save: %s exited [%s %d]", name, app, pid)
-					SnipeAt(ctx, tracked, time.Now())
+					snipeMaybeEnded(ctx, tracked)
 				} else {
 					log.Printf("track.Save: %s exit ok [%s %d]", name, app, pid)
-					delSave(link)
-					tracked.EndSave(nil)
 					tracked.SetFinishedAt(time.Now())
 				}
 				return

@@ -123,14 +123,14 @@ func (t *tracked) BeginSave() {
 	t.target.BeginSave()
 }
 
-func (t *tracked) EndSave(err error) {
+func (t *tracked) EndSave() {
 	t.RLock()
 	defer t.RUnlock()
 	if t.target == nil {
 		return
 	}
 
-	t.target.EndSave(err)
+	t.target.EndSave()
 }
 
 func (t *tracked) CheckLive(ctx context.Context) (bool, error) {
@@ -273,7 +273,9 @@ func (t *tracked) FinishedAt() time.Time {
 func (t *tracked) SetFinishedAt(at time.Time) {
 	t.Lock()
 	defer t.Unlock()
+	delSave(t.Link())
 	t.finishedAt = at
+	t.EndSave()
 }
 
 func (t *tracked) StreamURL() string {
