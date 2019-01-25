@@ -154,9 +154,6 @@ func RunDownloader(ctx context.Context, url, name string) (cmd *exec.Cmd, err er
 	saveAs = saveAs + ".ts"
 
 	args := []string{
-		"--hls-segment-threads", "4",
-		"--hls-segment-timeout", "2.0",
-		"--http-timeout", "2.0",
 		"--http-header", ua,
 		"-o", saveAs,
 		fmt.Sprintf("hlsvariant://%s", url),
