@@ -28,7 +28,8 @@ import (
 	"github.com/bobbytrapz/autosr/dashboard"
 	"github.com/bobbytrapz/autosr/ipc"
 	"github.com/bobbytrapz/autosr/options"
-	"github.com/bobbytrapz/autosr/showroom"
+	// use showroom module
+	_ "github.com/bobbytrapz/autosr/showroom"
 	"github.com/bobbytrapz/autosr/track"
 	"github.com/spf13/cobra"
 )
@@ -120,17 +121,17 @@ Details can be found at https://github.com/bobbytrapz/autosr/LICENSE.
 		ctx, cancel := context.WithCancel(ctx)
 		defer cancel()
 
+		// start ipc
+		ipc.Start(ctx)
+
+		// start tracking
+		track.Start(ctx)
+
 		// wait for all tracking related tasks to complete
 		defer func() {
 			track.Wait()
 			fmt.Println("autosr: done")
 		}()
-
-		// start ipc
-		ipc.Start(ctx)
-
-		// start showroom
-		showroom.Start(ctx)
 
 		// handle interrupt
 		sig := make(chan os.Signal, 1)
