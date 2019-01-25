@@ -106,8 +106,6 @@ func (t target) CheckStream(ctx context.Context) (streamURL string, err error) {
 		return
 	}
 
-	log.Println("showroom.CheckStream:", at, err)
-
 	err = retry.StringError{
 		Message: fmt.Sprintf("%s has no stream yet", t.name),
 		Attempt: func() (string, error) {
