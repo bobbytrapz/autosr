@@ -231,7 +231,7 @@ func AddTarget(ctx context.Context, link string) error {
 	defer rw.Unlock()
 
 	if _, ok := tracking[link]; ok {
-		return errors.New("track.AddTarget: we are already tracking this target")
+		return fmt.Errorf("track.AddTarget: already tracking: %s", link)
 	}
 
 	u, err := url.Parse(link)
@@ -253,9 +253,19 @@ func AddTarget(ctx context.Context, link string) error {
 		return errors.New("track.AddTarget: target is nil")
 	}
 
-	fmt.Println(host, ": added", link)
-	tracking[link] = &tracked{
+	fmt.Println(host, "added", link)
+	added := &tracked{
 		target: target,
+	}
+	tracking[link] = added
+
+	// check target right away
+	if _, err := target.CheckStream(ctx); err == nil {
+		log.Println("track.AddTarget:", target.Name(), "is live now!")
+		// they are live now so try to snipe them now
+		if err = SnipeAt(ctx, added, time.Now()); err != nil {
+			log.Println("track.AddTarget:", err)
+		}
 	}
 
 	return nil
@@ -290,7 +300,7 @@ func RemoveTarget(ctx context.Context, link string) error {
 		return errors.New("track.RemoveTarget: target is nil")
 	}
 
-	fmt.Println(host, ": removed", link)
+	fmt.Println(host, "removed", link)
 	tracked.Cancel()
 	delete(tracking, link)
 
@@ -304,7 +314,7 @@ func CancelTarget(link string) error {
 
 	tracked, ok := tracking[link]
 	if !ok {
-		return errors.New("track.CancelTarget: we are not tracking this target")
+		return fmt.Errorf("track.CancelTarget: did not find: %s", link)
 	}
 
 	tracked.Cancel()
@@ -402,7 +412,7 @@ func getTracked(link string) (tracked *tracked, err error) {
 	tracked = tracking[link]
 
 	if tracked == nil {
-		err = errors.New("track.GetTarget: we are not tracking this target")
+		err = fmt.Errorf("track.getTracked: did not find: %s", link)
 		return
 	}
 

@@ -46,7 +46,7 @@ func init() {
 
 // Hostname gives the hostname for this module
 func (m Module) Hostname() string {
-	return "showroom-live.com"
+	return "www.showroom-live.com"
 }
 
 // AddTarget to track
@@ -81,16 +81,6 @@ func (m Module) AddTarget(ctx context.Context, link string) (track.Target, error
 	rw.Lock()
 	targets = append(targets, added)
 	rw.Unlock()
-
-	// check target right away
-	if _, err := added.CheckStream(ctx); err == nil {
-		log.Println("showroom.AddTarget:", added.name, "is live now!")
-		// they are live now so try to snipe them now
-		if err = track.SnipeTargetAt(ctx, added, time.Now()); err != nil {
-			log.Println("showroom.AddTarget:", err)
-			return added, nil
-		}
-	}
 
 	return added, nil
 }
