@@ -31,9 +31,9 @@ import (
 
 var saving = struct {
 	sync.RWMutex
-	lookup map[string]*exec.Cmd
+	lookup map[string]bool
 }{
-	lookup: make(map[string]*exec.Cmd),
+	lookup: make(map[string]bool),
 }
 
 func hasSave(link string) bool {
@@ -43,13 +43,13 @@ func hasSave(link string) bool {
 	return ok
 }
 
-func addSave(link string, cmd *exec.Cmd) error {
+func addSave(link string) error {
 	saving.Lock()
 	defer saving.Unlock()
 	if _, ok := saving.lookup[link]; ok {
 		return errors.New("track.addSave: stream is already being downloaded")
 	}
-	saving.lookup[link] = cmd
+	saving.lookup[link] = true
 	return nil
 }
 
@@ -73,15 +73,12 @@ func Save(ctx context.Context, tracked *tracked) error {
 		return errors.New("track.Save: no stream url")
 	}
 
-	tracked.SetStartedAt(time.Now())
-	tracked.BeginSave()
-
-	cmd, err := RunDownloader(ctx, streamURL, name)
-	if err != nil {
+	if err := tracked.SetStartedAt(time.Now()); err != nil {
 		return fmt.Errorf("track.Save: %s", err)
 	}
 
-	if err := addSave(link, cmd); err != nil {
+	cmd, err := RunDownloader(ctx, streamURL, name)
+	if err != nil {
 		return fmt.Errorf("track.Save: %s", err)
 	}
 
@@ -112,9 +109,8 @@ func Save(ctx context.Context, tracked *tracked) error {
 			case <-ctx.Done():
 				cmd.Process.Kill()
 				err := cmd.Wait()
-				delSave(link)
-				log.Printf("track.Save: %s %s [%s %d] (%s)", name, ctx.Err(), app, pid, err)
 				tracked.SetFinishedAt(time.Now())
+				log.Printf("track.Save: %s %s [%s %d] (%s)", name, ctx.Err(), app, pid, err)
 				return
 			case <-cancelSave:
 				// we have been selected for cancellation
@@ -129,8 +125,8 @@ func Save(ctx context.Context, tracked *tracked) error {
 					log.Printf("track.Save: %s exited [%s %d]", name, app, pid)
 					snipeMaybeEnded(ctx, tracked)
 				} else {
-					log.Printf("track.Save: %s exit ok [%s %d]", name, app, pid)
 					tracked.SetFinishedAt(time.Now())
+					log.Printf("track.Save: %s exit ok [%s %d]", name, app, pid)
 				}
 				return
 			}
