@@ -20,7 +20,6 @@ import (
 	"context"
 	"fmt"
 	"log"
-	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
@@ -53,20 +52,12 @@ func readList(ctx context.Context) error {
 	}
 
 	// remove missing targets
-	for host, t := range tracking {
+	for _, t := range tracking {
 		link := t.Link()
 		if _, ok := lst[link]; !ok {
-			m, err := FindModule(host)
-			if err != nil {
-				return err
-			}
-			ret, err := m.RemoveTarget(ctx, link)
-			if err != nil {
-				fmt.Println(host, err)
+			if err := RemoveTarget(ctx, link); err != nil {
+				fmt.Println(err)
 				continue
-			}
-			if ret != nil {
-				fmt.Println(host, "removed", link)
 			}
 		}
 	}
@@ -81,28 +72,13 @@ func readList(ctx context.Context) error {
 		default:
 		}
 		waitAdd.Add(1)
-		go func(u string) {
+		go func(l string) {
 			defer waitAdd.Done()
 
-			p, err := url.Parse(u)
+			err := AddTarget(ctx, l)
 			if err != nil {
-				log.Println("track.readList: invalid url", u, err)
+				fmt.Println(err)
 				return
-			}
-			host := p.Hostname()
-			m, err := FindModule(host)
-			if err != nil {
-				log.Println("track.readList:", u, err)
-				return
-			}
-
-			ret, err := m.AddTarget(ctx, u)
-			if err != nil {
-				fmt.Println(host, err)
-				return
-			}
-			if ret != nil {
-				fmt.Println(host, "added", u)
 			}
 
 			return
