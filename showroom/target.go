@@ -57,7 +57,7 @@ func AddTargetFromURL(ctx context.Context, link string) (bool, error) {
 		}
 	}
 
-	t := Target{
+	t := target{
 		name:    name,
 		display: buf.String(),
 		id:      s.ID,
@@ -112,8 +112,7 @@ func RemoveTargetFromURL(link string) (bool, error) {
 	return true, nil
 }
 
-// Target showroom streamer
-type Target struct {
+type target struct {
 	// info
 	name    string
 	display string
@@ -123,40 +122,40 @@ type Target struct {
 }
 
 // BeginSnipe callback
-func (t Target) BeginSnipe() {
+func (t target) BeginSnipe() {
 	log.Println("showroom.BeginSnipe:", t.name)
 	return
 }
 
 // BeginSave callback
-func (t Target) BeginSave() {
+func (t target) BeginSave() {
 	log.Println("showroom.BeginSave:", t.name)
 	return
 }
 
 // EndSave callback
-func (t Target) EndSave() {
+func (t target) EndSave() {
 	log.Println("showroom.EndSave:", t.name)
 	return
 }
 
 // Display for display in dashboard
-func (t Target) Display() string {
+func (t target) Display() string {
 	return t.display
 }
 
 // Name is the streamers real name
-func (t Target) Name() string {
+func (t target) Name() string {
 	return t.name
 }
 
 // Link is url string where this user's streams can be found
-func (t Target) Link() string {
+func (t target) Link() string {
 	return t.link
 }
 
 // CheckLive gives true if the user is online
-func (t Target) CheckLive(ctx context.Context) (isLive bool, err error) {
+func (t target) CheckLive(ctx context.Context) (isLive bool, err error) {
 	// check to see if the user is live
 	isLive, err = checkIsLive(ctx, t.id)
 	if err == nil && !isLive {
@@ -172,7 +171,7 @@ func (t Target) CheckLive(ctx context.Context) (isLive bool, err error) {
 }
 
 // CheckStream gives nil if a stream has been found and expects the user to possibly be live
-func (t Target) CheckStream(ctx context.Context) (streamURL string, err error) {
+func (t target) CheckStream(ctx context.Context) (streamURL string, err error) {
 	// check to see if the user is live
 	// if not just give up now
 	// get the room for this user
@@ -222,7 +221,7 @@ func (t Target) CheckStream(ctx context.Context) (streamURL string, err error) {
 }
 
 // SavePath decides where videos are saved
-func (t Target) SavePath() string {
+func (t target) SavePath() string {
 	if t.name != "" {
 		return t.name
 	}
