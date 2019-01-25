@@ -86,8 +86,8 @@ func displayList(lst []*tracked) (d []DisplayRow) {
 
 // Display gives everyone we are tracking sorted by urgency for display by dashboard
 func Display() (d DisplayTable) {
-	m.RLock()
-	defer m.RUnlock()
+	rw.RLock()
+	defer rw.RUnlock()
 
 	var live []*tracked
 	var upcoming []*tracked
