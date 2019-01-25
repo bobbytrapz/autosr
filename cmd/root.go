@@ -125,7 +125,9 @@ Details can be found at https://github.com/bobbytrapz/autosr/LICENSE.
 		ipc.Start(ctx)
 
 		// start tracking
-		track.Start(ctx)
+		if err := track.Start(ctx); err != nil {
+			panic(err)
+		}
 
 		// wait for all tracking related tasks to complete
 		defer func() {
