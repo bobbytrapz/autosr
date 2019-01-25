@@ -256,10 +256,23 @@ func (t *tracked) StartedAt() time.Time {
 }
 
 // SetStartedAt for target
-func (t *tracked) SetStartedAt(at time.Time) {
+func (t *tracked) SetStartedAt(at time.Time) error {
 	t.Lock()
 	defer t.Unlock()
+
+	if t.target == nil {
+		return errors.New("track.SetStartedAt: target is nil")
+	}
+
+	if err := addSave(t.target.Link()); err != nil {
+		return err
+	}
+
 	t.startedAt = at
+
+	t.target.EndSave()
+
+	return nil
 }
 
 // FinishedAt for target
@@ -273,9 +286,18 @@ func (t *tracked) FinishedAt() time.Time {
 func (t *tracked) SetFinishedAt(at time.Time) {
 	t.Lock()
 	defer t.Unlock()
-	delSave(t.Link())
+
+	if t.target == nil {
+		return
+	}
+
+	delSave(t.target.Link())
+
 	t.finishedAt = at
-	t.EndSave()
+
+	t.target.EndSave()
+
+	return
 }
 
 func (t *tracked) StreamURL() string {
