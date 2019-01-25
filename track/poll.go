@@ -27,11 +27,11 @@ import (
 
 const retryAttempts = 3
 
-var check = make(chan int, 1)
+var check = make(chan struct{}, 1)
 
 // CheckNow makes poll process right now
 func CheckNow() {
-	check <- 1
+	check <- struct{}{}
 }
 
 func beginPoll(ctx context.Context) error {
