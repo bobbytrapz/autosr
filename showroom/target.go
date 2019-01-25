@@ -32,6 +32,8 @@ import (
 // note: this is arbitrary
 const maxDisplayLength = 75
 
+var rw sync.RWMutex
+
 // AddTargetFromURL adds showroom user using the url
 // returns true if they were actually added
 func AddTargetFromURL(ctx context.Context, link string) (bool, error) {
@@ -63,12 +65,6 @@ func AddTargetFromURL(ctx context.Context, link string) (bool, error) {
 		id:      s.ID,
 		link:    link,
 		urlKey:  s.LiveRoom.URLKey,
-	}
-
-	err = track.AddTarget(t)
-	if err != nil {
-		// we must be already targeting
-		return false, nil
 	}
 
 	rw.Lock()
