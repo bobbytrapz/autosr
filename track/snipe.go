@@ -27,7 +27,7 @@ import (
 	"github.com/bobbytrapz/autosr/retry"
 )
 
-var timeout = 5 * time.Minute
+var snipeTimeout = 15 * time.Minute
 var errSnipeTimeout = errors.New("track.snipe: timeout")
 var errSnipeNotFound = errors.New("track.snipe: did not find a stream url")
 
@@ -143,7 +143,7 @@ func snipeMaybeEnded(ctx context.Context, tracked *tracked) error {
 	if err == errSnipeNotFound || err == errSnipeTimeout {
 		if err == errSnipeTimeout {
 			// so we were finished minutes ago
-			at := time.Now().Add(-timeout)
+			at := time.Now().Add(-snipeTimeout)
 			tracked.SetFinishedAt(at)
 			log.Printf("track.snipeMaybeEnded: %s was finished at %s", name, at)
 		} else if err == errSnipeNotFound {
@@ -182,7 +182,7 @@ func snipe(ctx context.Context, tracked *tracked, upcomingAt time.Time) (err err
 			log.Println("track.snipe:", name, ctx.Err())
 			return
 		case <-check.C:
-			to := time.NewTimer(timeout)
+			to := time.NewTimer(snipeTimeout)
 			defer to.Stop()
 
 			var ok bool
