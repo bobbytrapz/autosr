@@ -131,6 +131,7 @@ func snipeMaybeEnded(ctx context.Context, tracked *tracked) error {
 
 	if err == nil {
 		// we found a stream so we allow a new save
+		log.Println("track.snipeMaybeEnded:", name, "recovered")
 		delSave(link)
 		if err := Save(ctx, tracked); err != nil {
 			log.Println("track.snipeMaybeEnded:", err)
