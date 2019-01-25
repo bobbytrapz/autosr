@@ -19,6 +19,7 @@ import (
 	"fmt"
 	"log"
 	"sort"
+	"strings"
 	"time"
 )
 
@@ -49,8 +50,13 @@ func displayRow(t *tracked) (row DisplayRow, err error) {
 	}
 
 	if t.IsLive() {
-		at := t.StartedAt().Format(time.Kitchen)
-		row.Status = fmt.Sprintf("Now (%s)", at)
+		d := time.Now().Sub(t.StartedAt()).Truncate(5 * time.Minute)
+		if d > time.Second {
+			s := strings.TrimSuffix(d.String(), "0s")
+			row.Status = fmt.Sprintf("Now (%s)", s)
+		} else {
+			row.Status = "Now"
+		}
 	} else if t.IsUpcoming() {
 		at := time.Until(t.UpcomingAt()).Truncate(time.Second)
 		if at > time.Second {
