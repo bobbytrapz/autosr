@@ -124,16 +124,16 @@ func Wait() {
 
 // AddTarget for tracking
 func AddTarget(ctx context.Context, link string) error {
-	rw.Lock()
-	defer rw.Unlock()
-
-	if _, ok := tracking[link]; ok {
-		return fmt.Errorf("track.AddTarget: already tracking: %s", link)
+	rw.RLock()
+	_, ok := tracking[link]
+	rw.RUnlock()
+	if ok {
+		return nil
 	}
 
 	u, err := url.Parse(link)
 	if err != nil {
-		return fmt.Errorf("track.AddTarget: %s", err)
+		return fmt.Errorf("track.AddTarget: %s %s", link, err)
 	}
 
 	host := u.Hostname()
@@ -144,17 +144,19 @@ func AddTarget(ctx context.Context, link string) error {
 
 	target, err := m.AddTarget(ctx, link)
 	if err != nil {
-		return fmt.Errorf("track.AddTarget: %s", err)
+		return fmt.Errorf("track.AddTarget: %s %s", link, err)
 	}
 	if target == nil {
 		return errors.New("track.AddTarget: target is nil")
 	}
 
+	rw.Lock()
 	fmt.Println(host, "added", link)
 	added := &tracked{
 		target: target,
 	}
 	tracking[link] = added
+	rw.Unlock()
 
 	// check target right away
 	if _, err := target.CheckStream(ctx); err == nil {
@@ -170,17 +172,17 @@ func AddTarget(ctx context.Context, link string) error {
 
 // RemoveTarget from tracking
 func RemoveTarget(ctx context.Context, link string) error {
-	rw.Lock()
-	defer rw.Unlock()
-
+	rw.RLock()
 	tracked, ok := tracking[link]
+	rw.RUnlock()
+
 	if !ok {
 		return errors.New("track.RemoveTarget: we are not tracking this target")
 	}
 
 	u, err := url.Parse(link)
 	if err != nil {
-		return fmt.Errorf("track.RemoveTarget: %s", err)
+		return fmt.Errorf("track.RemoveTarget: %s %s", link, err)
 	}
 
 	host := u.Hostname()
@@ -191,15 +193,18 @@ func RemoveTarget(ctx context.Context, link string) error {
 
 	target, err := m.RemoveTarget(ctx, link)
 	if err != nil {
-		return fmt.Errorf("track.RemoveTarget: %s", err)
+		return fmt.Errorf("track.RemoveTarget: %s %s", link, err)
 	}
 	if target == nil {
 		return errors.New("track.RemoveTarget: target is nil")
 	}
 
-	fmt.Println(host, "removed", link)
-	tracked.Cancel()
+	rw.Lock()
 	delete(tracking, link)
+	rw.Unlock()
+
+	tracked.Cancel()
+	fmt.Println(host, "removed", link)
 
 	return nil
 }
@@ -207,9 +212,9 @@ func RemoveTarget(ctx context.Context, link string) error {
 // CancelTarget processing
 func CancelTarget(link string) error {
 	rw.Lock()
-	defer rw.Unlock()
-
 	tracked, ok := tracking[link]
+	rw.Unlock()
+
 	if !ok {
 		return fmt.Errorf("track.CancelTarget: did not find: %s", link)
 	}
