@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"log"
 	"path"
+	"time"
 
 	"github.com/bobbytrapz/autosr/retry"
 	"github.com/bobbytrapz/autosr/track"
@@ -85,33 +86,15 @@ func (t target) CheckLive(ctx context.Context) (isLive bool, err error) {
 
 // CheckStream gives nil if a stream has been found and expects the user to possibly be live
 func (t target) CheckStream(ctx context.Context) (streamURL string, err error) {
-	// check to see if the user is live
-	// if not just give up now
-	// get the room for this user
-	r, err := fetchRoom(ctx, t.link)
-	if err != nil {
-		err = retry.StringError{
-			Message: fmt.Sprintf("showroom.CheckStream: %s %s", t.name, err),
-			Attempt: func() (string, error) {
-				return t.CheckStream(ctx)
-			},
-		}
-
-		return
+	// check for stream
+	if s, err := checkStreamURL(ctx, t.id); err == nil && s != "" {
+		return s, nil
 	}
 
-	// check for streaming url
-	if r.StreamURL != "" {
-		streamURL = r.StreamURL
-		return
-	}
-
-	// check a new upcoming time
-	nextLive := r.LiveRoom.NextLive
-	if nextLive != "" && nextLive != "TBD" {
-		at := parseUpcomingDate(nextLive)
-
-		// there's a new date set so start a new one
+	// check for upcoming time
+	var at time.Time
+	if at, err = checkNextLive(ctx, t.id); err == nil && !at.IsZero() {
+		// there's a date set so maybe add a snipe
 		if err = track.SnipeTargetAt(ctx, t, at); err != nil {
 			log.Println("showroom.CheckStream:", err)
 
@@ -122,6 +105,8 @@ func (t target) CheckStream(ctx context.Context) (streamURL string, err error) {
 
 		return
 	}
+
+	log.Println("showroom.CheckStream:", at, err)
 
 	err = retry.StringError{
 		Message: fmt.Sprintf("%s has no stream yet", t.name),

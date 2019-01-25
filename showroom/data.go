@@ -31,6 +31,15 @@ type isLiveResponse struct {
 	Ok int `json:"ok"`
 }
 
+type streamingURLResponse struct {
+	StreamingURLs []stream `json:"streaming_url_list"`
+}
+
+type nextLiveResponse struct {
+	Epoch int64  `json:"epoch"`
+	Text  string `json:"text"`
+}
+
 type livesData struct {
 	Genre       int    `json:"genre_id"`
 	HasUpcoming bool   `json:"has_upcoming"`
@@ -105,6 +114,7 @@ type stream struct {
 	Name    string `json:"stream_name"`
 	Type    string `json:"type"`
 	URL     string `json:"url"`
+	Quality int    `json:"quality"`
 }
 
 func (s *stream) low() string {

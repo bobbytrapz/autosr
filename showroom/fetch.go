@@ -63,10 +63,16 @@ func makeRequest(ctx context.Context, method, url string, body io.Reader, refere
 	}
 
 	// headers
-	req.Header.Add("Host", domainName)
+	req.Header.Add("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8")
+	req.Header.Add("Accept-Encoding", "gzip, deflate, br")
+	req.Header.Add("Accept-Language", "en-US,en;q=0.5")
+	req.Header.Add("Cache-Control", "no-cache")
 	req.Header.Add("Connection", "keep-alive")
-	req.Header.Add("Accept-Encoding", "gzip, deflate, sdch, br")
-	req.Header.Add("Accept-Language", "en-US,en,q=0.8")
+	req.Header.Add("DNT", "1")
+	req.Header.Add("Host", domainName)
+	req.Header.Add("Pragma", "no-cache")
+	req.Header.Add("Upgrade-Insecure-Requests", "1")
+
 	if referer != "" {
 		req.Header.Add("Referer", referer)
 	}
@@ -83,7 +89,7 @@ func onlivesAPI() string {
 
 func makeOnLivesRequest(ctx context.Context) (req *http.Request, err error) {
 	url := fmt.Sprintf("https://www.showroom-live.com/api/live/onlives?_=%d", time.Now().Unix())
-	req, err = makeRequest(ctx, "get", url, nil, onlivesURL)
+	req, err = makeRequest(ctx, "GET", url, nil, onlivesURL)
 	if err != nil {
 		return
 	}
@@ -98,18 +104,30 @@ func makeOnLivesRequest(ctx context.Context) (req *http.Request, err error) {
 	return req, nil
 }
 
-func makeIsLiveRequest(ctx context.Context, id int) (req *http.Request, err error) {
-	url := fmt.Sprintf("https://www.showroom-live.com/room/is_live?room_id=%d", id)
-	req, err = makeRequest(ctx, "get", url, nil, domainName)
+func makeJSONRequest(ctx context.Context, endpoint string, id int) (req *http.Request, err error) {
+	url := fmt.Sprintf("%s?room_id=%d", endpoint, id)
+	req, err = makeRequest(ctx, "GET", url, nil, "")
 	if err != nil {
 		return
 	}
 
-	// xhr headers
-	req.Header.Add("Accept", "application/json")
-	req.Header.Add("X-Requested-With", "XMLHttpRequest")
+	// xhr headers but we decided to copy the browser headers closely instead
+	// req.Header.Add("Accept", "application/json")
+	// req.Header.Add("X-Requested-With", "XMLHttpRequest")
 
 	return
+}
+
+func makeIsLiveRequest(ctx context.Context, id int) (req *http.Request, err error) {
+	return makeJSONRequest(ctx, "https://www.showroom-live.com/room/is_live", id)
+}
+
+func makeStreamingURLRequest(ctx context.Context, id int) (req *http.Request, err error) {
+	return makeJSONRequest(ctx, "https://www.showroom-live.com/api/live/streaming_url", id)
+}
+
+func makeNextLiveRequest(ctx context.Context, id int) (req *http.Request, err error) {
+	return makeJSONRequest(ctx, "https://www.showroom-live.com/api/room/next_live", id)
 }
 
 // tells us if a certain showroom user is online
@@ -140,6 +158,7 @@ func checkIsLive(ctx context.Context, id int) (isLive bool, err error) {
 				return checkIsLive(ctx, id)
 			},
 		}
+
 		return
 	}
 
@@ -156,6 +175,115 @@ func checkIsLive(ctx context.Context, id int) (isLive bool, err error) {
 	}
 
 	isLive = (data.Ok == 1)
+
+	return
+}
+
+func checkStreamURL(ctx context.Context, id int) (streamURL string, err error) {
+	req, err := makeStreamingURLRequest(ctx, id)
+	if err != nil {
+		return
+	}
+
+	res, err := httpClient.Do(req)
+	if err != nil {
+		err = retry.StringError{
+			Message: fmt.Sprintf("showroom.checkStreamURL: %s", err),
+			Attempt: func() (string, error) {
+				return checkStreamURL(ctx, id)
+			},
+		}
+
+		return
+	}
+	defer res.Body.Close()
+
+	buf, err := readResponse(res)
+	if err != nil {
+		err = retry.StringError{
+			Message: fmt.Sprintf("showroom.checkStreamURL: %s", err),
+			Attempt: func() (string, error) {
+				return checkStreamURL(ctx, id)
+			},
+		}
+
+		return
+	}
+
+	var data streamingURLResponse
+	if err = json.Unmarshal(buf.Bytes(), &data); err != nil {
+		err = retry.StringError{
+			Message: fmt.Sprintf("showroom.checkStreamURL: %s", err),
+			Attempt: func() (string, error) {
+				return checkStreamURL(ctx, id)
+			},
+		}
+
+		return
+	}
+
+	// find highest quality hls stream
+	var stream stream
+	for _, s := range data.StreamingURLs {
+		if s.Type != "hls" {
+			continue
+		}
+
+		if s.Quality > stream.Quality {
+			stream = s
+		}
+	}
+	streamURL = stream.URL
+
+	return
+}
+
+func checkNextLive(ctx context.Context, id int) (at time.Time, err error) {
+	req, err := makeNextLiveRequest(ctx, id)
+	if err != nil {
+		return
+	}
+
+	res, err := httpClient.Do(req)
+	if err != nil {
+		err = retry.TimeError{
+			Message: fmt.Sprintf("showroom.checkNextLive: %s", err),
+			Attempt: func() (time.Time, error) {
+				return checkNextLive(ctx, id)
+			},
+		}
+
+		return
+	}
+	defer res.Body.Close()
+
+	buf, err := readResponse(res)
+	if err != nil {
+		err = retry.TimeError{
+			Message: fmt.Sprintf("showroom.checkNextLive: %s", err),
+			Attempt: func() (time.Time, error) {
+				return checkNextLive(ctx, id)
+			},
+		}
+
+		return
+	}
+
+	var data nextLiveResponse
+	if err = json.Unmarshal(buf.Bytes(), &data); err != nil {
+		err = retry.TimeError{
+			Message: fmt.Sprintf("showroom.checkNextLive: %s", err),
+			Attempt: func() (time.Time, error) {
+				return checkNextLive(ctx, id)
+			},
+		}
+
+		return
+	}
+
+	if data.Epoch > 0 {
+		at = time.Unix(data.Epoch, 0).Local()
+	}
 
 	return
 }
@@ -337,7 +465,8 @@ func parseUpcomingDate(d string) time.Time {
 		at = at.AddDate(1, 0, 0)
 	}
 
-	// FIXME: time is in JST but UTC so we do this crap
+	// note: time is in JST but UTC so we do this crap
+	// we should be removing all of this soon
 	at = at.Add(-14*time.Hour + 5*time.Hour).Local()
 
 	return at
