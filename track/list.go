@@ -62,11 +62,11 @@ func readList(ctx context.Context) error {
 			}
 			ret, err := m.RemoveTarget(ctx, link)
 			if err != nil {
-				fmt.Println(host, ":", err)
+				fmt.Println(host, err)
 				continue
 			}
 			if ret != nil {
-				fmt.Println(host, ": removed", link)
+				fmt.Println(host, "removed", link)
 			}
 		}
 	}
@@ -98,11 +98,11 @@ func readList(ctx context.Context) error {
 
 			ret, err := m.AddTarget(ctx, u)
 			if err != nil {
-				fmt.Println(host, ":", err)
+				fmt.Println(host, err)
 				return
 			}
 			if ret != nil {
-				fmt.Println(host, ": added", u)
+				fmt.Println(host, "added", u)
 			}
 
 			return
