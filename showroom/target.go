@@ -16,97 +16,14 @@
 package showroom
 
 import (
-	"bytes"
 	"context"
 	"fmt"
 	"log"
-	"net/url"
 	"path"
-	"strings"
-	"time"
 
 	"github.com/bobbytrapz/autosr/retry"
 	"github.com/bobbytrapz/autosr/track"
 )
-
-// note: this is arbitrary
-const maxDisplayLength = 75
-
-var rw sync.RWMutex
-
-// AddTargetFromURL adds showroom user using the url
-// returns true if they were actually added
-func AddTargetFromURL(ctx context.Context, link string) (bool, error) {
-	_, err := url.Parse(link)
-	if err != nil {
-		return false, fmt.Errorf("showroom.AddTargetFromURL: '%s' %s", link, err)
-	}
-
-	s, err := fetchRoom(ctx, link)
-	if err != nil {
-		return false, fmt.Errorf("showroom.AddTargetFromURL: '%s' %s", link, err)
-	}
-
-	name := strings.TrimSpace(s.Name)
-	var buf bytes.Buffer
-	for _, r := range name {
-		buf.WriteRune(r)
-		if len(buf.String()) > maxDisplayLength {
-			break
-		}
-		if r != ' ' && r != '(' && r != ')' {
-			buf.WriteRune(' ')
-		}
-	}
-
-	t := target{
-		name:    name,
-		display: buf.String(),
-		id:      s.ID,
-		link:    link,
-		urlKey:  s.LiveRoom.URLKey,
-	}
-
-	rw.Lock()
-	targets = append(targets, t)
-	rw.Unlock()
-
-	// check target right away
-	if streamURL, err := t.CheckStream(ctx); err == nil {
-		log.Println("showroom.AddTargetFromURL:", t.name, "is live now!", streamURL)
-		// they are live now so snipe them now
-		if err = track.SnipeTargetAt(ctx, t, time.Now()); err != nil {
-			log.Println("showroom.AddTargetFromURL:", err)
-			return false, nil
-		}
-		return true, nil
-	}
-
-	return true, nil
-}
-
-// RemoveTargetFromURL removes showroom user using the url
-// returns true if they were actually removed
-func RemoveTargetFromURL(link string) (bool, error) {
-	if err := track.RemoveTarget(link); err != nil {
-		// this target does not exist
-		return false, nil
-	}
-
-	rw.Lock()
-	n := 0
-	for ; n < len(targets); n++ {
-		if targets[n].link == link {
-			break
-		}
-	}
-	if n < len(targets) {
-		targets = append(targets[:n], targets[n+1:]...)
-	}
-	rw.Unlock()
-
-	return true, nil
-}
 
 type target struct {
 	// info

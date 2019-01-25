@@ -35,6 +35,7 @@ type Module struct{}
 
 var module = Module{}
 
+var rw sync.RWMutex
 var targets = make([]target, 0)
 
 func init() {
@@ -64,9 +65,6 @@ func (m Module) AddTarget(ctx context.Context, link string) (track.Target, error
 	var buf bytes.Buffer
 	for _, r := range name {
 		buf.WriteRune(r)
-		if len(buf.String()) > maxDisplayLength {
-			break
-		}
 		if r != ' ' && r != '(' && r != ')' {
 			buf.WriteRune(' ')
 		}
@@ -132,7 +130,7 @@ func (m Module) CheckUpcoming(ctx context.Context) error {
 	rw.RLock()
 	defer rw.RUnlock()
 	var waitCheck sync.WaitGroup
-	for _, target := range targets {
+	for _, tt := range targets {
 		waitCheck.Add(1)
 		go func(t target) {
 			defer waitCheck.Done()
@@ -180,7 +178,7 @@ func (m Module) CheckUpcoming(ctx context.Context) error {
 					return
 				}
 			}
-		}(target)
+		}(tt)
 	}
 
 	// wait for each target to finish checking
