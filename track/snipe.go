@@ -99,7 +99,6 @@ func SnipeAt(ctx context.Context, tracked *tracked, at time.Time) error {
 	if at.IsZero() {
 		return errors.New("track.SnipeAt: invalid time")
 	}
-	log.Println("track.SnipeAt:", tracked.Name(), "at", at.Format(time.UnixDate))
 
 	link := tracked.Link()
 
@@ -110,10 +109,10 @@ func SnipeAt(ctx context.Context, tracked *tracked, at time.Time) error {
 
 	upcomingAt := tracked.UpcomingAt()
 	if at == upcomingAt {
-		log.Println("track.SnipeAt:", tracked.Name(), "already sniping at given time")
+		log.Println("track.SnipeAt:", tracked.Name(), "already sniping at", at)
 		return nil
 	} else if !upcomingAt.IsZero() {
-		log.Println("track.SnipeAt:", tracked.Name(), "sniping new time")
+		log.Println("track.SnipeAt:", tracked.Name(), "at", at.Format(time.UnixDate))
 	}
 
 	go snipe(ctx, tracked, at)
