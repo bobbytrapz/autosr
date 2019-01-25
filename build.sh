@@ -19,3 +19,5 @@ go test ./...
 GOOS=darwin go build -o dist/osx/$name-osx
 GOOS=linux go build -o dist/linux/$name
 GOOS=windows go build -o dist/windows/${name}.exe
+go install
+
