@@ -27,7 +27,7 @@ import (
 	"github.com/bobbytrapz/autosr/options"
 )
 
-var m sync.RWMutex
+var rw sync.RWMutex
 var tracking = make(map[string]*tracked)
 
 var wg sync.WaitGroup
@@ -184,8 +184,8 @@ func (t *tracked) IsOffline() bool {
 
 // AddTarget for tracking
 func AddTarget(target Target) error {
-	m.Lock()
-	defer m.Unlock()
+	rw.Lock()
+	defer rw.Unlock()
 
 	if _, ok := tracking[target.Link()]; ok {
 		return errors.New("track.AddTarget: we are already tracking this target")
@@ -200,8 +200,8 @@ func AddTarget(target Target) error {
 
 // RemoveTarget from tracking
 func RemoveTarget(link string) error {
-	m.Lock()
-	defer m.Unlock()
+	rw.Lock()
+	defer rw.Unlock()
 
 	tracked, ok := tracking[link]
 	if !ok {
@@ -217,8 +217,8 @@ func RemoveTarget(link string) error {
 
 // CancelTarget processing
 func CancelTarget(link string) error {
-	m.Lock()
-	defer m.Unlock()
+	rw.Lock()
+	defer rw.Unlock()
 
 	tracked, ok := tracking[link]
 	if !ok {
@@ -314,8 +314,8 @@ func (t *tracked) SetStreamURL(url string) {
 }
 
 func getTracked(link string) (tracked *tracked, err error) {
-	m.RLock()
-	defer m.RUnlock()
+	rw.RLock()
+	defer rw.RUnlock()
 
 	tracked = tracking[link]
 
