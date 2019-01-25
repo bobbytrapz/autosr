@@ -128,16 +128,17 @@ func snipeMaybeEnded(ctx context.Context, tracked *tracked) error {
 
 	log.Println("track.snipeMaybeEnded:", name)
 	err := snipe(ctx, tracked, time.Now())
-	delSave(link)
 
 	if err == nil {
+		// we found a stream so we allow a new save
+		delSave(link)
 		if err := Save(ctx, tracked); err != nil {
 			log.Println("track.snipeMaybeEnded:", err)
 			return err
 		}
 	}
 
-	// we are saving but we timed out or did not find a url
+	// we were trying to save but we timed out or did not find a url
 	if err == errSnipeNotFound || err == errSnipeTimeout {
 		if err == errSnipeTimeout {
 			// so we were finished minutes ago
