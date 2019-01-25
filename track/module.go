@@ -16,22 +16,29 @@
 package track
 
 import (
+	"context"
 	"errors"
 )
 
 // Module is called by poll and add/remove target
 type Module interface {
+	// information
+	Hostname() string
 	// called by track.poll
-	CheckUpcoming()
+	CheckUpcoming(context.Context) error
 	// called by track.Add/RemoveTarget
-	AddTarget()
-	RemoveTarget()
+	// give the target we added or removed or nil
+	AddTarget(link string) (*Target, error)
+	RemoveTarget(link string) (*Target, error)
 }
 
 var modules = make(map[string]Module)
 
 // RegisterModule with a hostname
-func RegisterModule(hostname string, m Module) error {
+// note: we do not expect to be called after tracking begins
+func RegisterModule(m Module) error {
+	hostname := m.Hostname()
+
 	if _, ok := modules[hostname]; ok {
 		return errors.New("track.RegisterModule: hostname already registered")
 	}
