@@ -93,9 +93,9 @@ func readList(ctx context.Context) error {
 	}()
 	select {
 	case <-done:
-		log.Println("showroom.readTrackList: done")
+		log.Println("track.readList: done")
 	case <-ctx.Done():
-		log.Println("showroom.readTrackList:", ctx.Err())
+		log.Println("track.readList:", ctx.Err())
 	}
 
 	return nil
