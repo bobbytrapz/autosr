@@ -28,8 +28,8 @@ type Module interface {
 	CheckUpcoming(context.Context) error
 	// called by track.Add/RemoveTarget
 	// give the target we added or removed or nil
-	AddTarget(link string) (Target, error)
-	RemoveTarget(link string) (Target, error)
+	AddTarget(ctx context.Context, link string) (Target, error)
+	RemoveTarget(ctx context.Context, link string) (Target, error)
 }
 
 var modules = make(map[string]Module)
