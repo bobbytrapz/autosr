@@ -30,6 +30,27 @@ import (
 	"github.com/gorilla/websocket"
 )
 
+// User in showroom
+type User struct {
+	Name string
+	ID   int
+}
+
+// Comment from chat
+type Comment struct {
+	User
+	Text string
+	At   time.Time
+}
+
+// Gift sent
+type Gift struct {
+	User
+	ID     int
+	Amount int
+	At     time.Time
+}
+
 var upgrader = websocket.Upgrader{
 	ReadBufferSize:  1024,
 	WriteBufferSize: 1024,
