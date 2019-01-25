@@ -84,7 +84,7 @@ If you have a comment or suggestion please contact @pibisubukebe on Twitter.
 For help or to report a bug visit https://github.com/bobbytrapz/autosr.
 
 Dashboard controls:
-	q - Quit dashboard. User 'autose stop' to actually stop all recording
+	q - Quit dashboard. Use 'autosr stop' to actually stop autosr
 	r - Check if any streams are on right away
 	o - Open link to stream in web browser
 
