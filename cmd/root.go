@@ -100,6 +100,9 @@ Details can be found at https://github.com/bobbytrapz/autosr/LICENSE.
 
 		if !shouldRunInForeground && os.Getenv(backgroundEnvKey) == "" {
 			if isRunningInBackground() {
+				if shouldNotStartDashboard {
+					return
+				}
 				dashboard.Run(shouldColorLogo)
 				return
 			}
