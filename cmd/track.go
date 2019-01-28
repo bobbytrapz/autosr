@@ -16,6 +16,7 @@
 package cmd
 
 import (
+	"bytes"
 	"fmt"
 	"io"
 	"os"
@@ -59,6 +60,30 @@ func copyFile(from, to string) error {
 	return nil
 }
 
+func appendFromStdin(fn string) error {
+	stat, _ := os.Stdin.Stat()
+	if (stat.Mode() & os.ModeCharDevice) != 0 {
+		return fmt.Errorf("cmd.appendFromStdin: nothing in stdin")
+	}
+
+	buf := &bytes.Buffer{}
+	io.Copy(buf, os.Stdin)
+
+	f, err := os.OpenFile(fn, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0600)
+	if err != nil {
+		return fmt.Errorf("cmd.appendFromStdin: %s", err)
+	}
+	defer f.Close()
+
+	buf.WriteByte('\n')
+	if _, err := f.Write(buf.Bytes()); err != nil {
+		fmt.Println("cmd.appendFromStdin:", err)
+		os.Exit(1)
+	}
+
+	return nil
+}
+
 var trackCmd = &cobra.Command{
 	Use:   "track",
 	Short: "Allows you to provide a list of urls to check for streams",
@@ -67,6 +92,12 @@ When you change this file the tracked targets are updated right away.
 `,
 	Run: func(cmd *cobra.Command, args []string) {
 		fn := filepath.Join(options.ConfigPath, trackListFileName)
+
+		if err := appendFromStdin(fn); err == nil {
+			// we appended data from stdin so we are done
+			return
+		}
+
 		if shouldDump {
 			f, err := os.Open(fn)
 			if err != nil {
