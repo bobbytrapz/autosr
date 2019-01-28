@@ -76,7 +76,7 @@ func appendFromStdin(fn string) error {
 	defer f.Close()
 
 	buf.WriteByte('\n')
-	if _, err := f.Write(buf.Bytes()); err != nil {
+	if _, err := buf.WriteTo(f); err != nil {
 		fmt.Println("cmd.appendFromStdin:", err)
 		os.Exit(1)
 	}
