@@ -2,4 +2,4 @@
 package version
 
 // String is the version string
-var String = "v1.0.0-beta"
+var String = "v1.0.0-beta2"
