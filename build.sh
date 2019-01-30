@@ -14,7 +14,6 @@ on_done() {
 trap "on_done" EXIT
 
 name="autosr"
-go generate
 go test ./...
 GOOS=darwin go build -o dist/osx/$name-osx
 GOOS=linux go build -o dist/linux/$name
