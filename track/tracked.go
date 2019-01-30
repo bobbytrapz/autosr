@@ -144,6 +144,26 @@ func (t *tracked) IsOffline() bool {
 	return !t.IsLive() && !t.IsUpcoming()
 }
 
+// UpcomingAt for target
+func (t *tracked) UpcomingAt() time.Time {
+	t.RLock()
+	defer t.RUnlock()
+
+	var at time.Time
+	now := time.Now()
+	sniping.RLock()
+	for _, t := range sniping.lookup[t.Link()] {
+		if at.IsZero() {
+			at = t
+		} else if t.After(now) && t.Before(at) {
+			at = t
+		}
+	}
+	sniping.RUnlock()
+
+	return at
+}
+
 // StartedAt for target
 func (t *tracked) StartedAt() time.Time {
 	t.RLock()
