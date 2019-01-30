@@ -231,6 +231,7 @@ func (t *tracked) UpcomingAt() time.Time {
 
 	var at time.Time
 	now := time.Now()
+	sniping.RLock()
 	for _, t := range sniping.lookup[t.Link()] {
 		if at.IsZero() {
 			at = t
@@ -238,6 +239,7 @@ func (t *tracked) UpcomingAt() time.Time {
 			at = t
 		}
 	}
+	sniping.RUnlock()
 
 	return at
 }
