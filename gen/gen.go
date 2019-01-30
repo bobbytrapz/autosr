@@ -26,7 +26,7 @@ import (
 func main() {
 	fmt.Println("gen.go")
 
-	tag, err := exec.Command("git", "describe", "--tags").Output()
+	tag, err := exec.Command("git", "describe", "master", "--tags").Output()
 	if err != nil {
 		panic(err)
 	}
