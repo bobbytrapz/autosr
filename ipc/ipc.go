@@ -60,7 +60,7 @@ func Start(ctx context.Context) {
 			if op, ok := err.(*net.OpError); ok {
 				if op.Op == "listen" {
 					// assume we failed to bind
-					fmt.Println("autosr is already using port 4846")
+					fmt.Println("autosr cannot listen on", addr)
 					os.Exit(1)
 				}
 			}
