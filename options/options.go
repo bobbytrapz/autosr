@@ -57,7 +57,7 @@ const (
 	configPathUnix          = "~/.config/autosr/"
 	defaultUserAgent        = `Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/71.0.3578.98 Safari/537.36`
 	defaultStreamDownloader = "streamlink"
-	defaultListenAddr       = "0.0.0.0:4846"
+	defaultListenAddr       = ":4846"
 	defaultPollRate         = 120 * time.Second
 	defaultSelectFGColor    = "black"
 	defaultSelectBGColor    = "white"

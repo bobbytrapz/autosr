@@ -55,7 +55,7 @@ func Start(ctx context.Context) {
 	}()
 
 	go func() {
-		log.Println("ipc.Start: ok")
+		log.Println("ipc.Start: listening on", addr)
 		if err := server.ListenAndServe(); err != nil {
 			if op, ok := err.(*net.OpError); ok {
 				if op.Op == "listen" {
