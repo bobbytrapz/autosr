@@ -144,7 +144,7 @@ func RunDownloader(ctx context.Context, url, name string) (cmd *exec.Cmd, err er
 
 	fn := fmt.Sprintf("%s-%s", time.Now().Format("2006-01-02"), name)
 	saveAs := fn
-	for n := 1; ; n++ {
+	for n := 2; ; n++ {
 		p := filepath.Join(saveTo, saveAs+".ts")
 		if _, err := os.Stat(p); os.IsNotExist(err) {
 			break
