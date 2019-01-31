@@ -54,14 +54,20 @@ func hasSnipe(link string, at time.Time) bool {
 
 // give true if it is newly added
 func addSnipe(link string, at time.Time) bool {
-	sniping.Lock()
-	defer sniping.Unlock()
-
-	if _, ok := sniping.lookup[link]; ok {
+	if hasSnipe(link, at) {
 		return false
 	}
 
-	sniping.lookup[link] = append(sniping.lookup[link], at)
+	sniping.Lock()
+	defer sniping.Unlock()
+
+	// prepend this new upcoming time
+	// we assume the latest time given is correct
+	// this means our displayed upcoming time will match our source
+	// however, we will attempt the other given times just in case
+	// in practice, this strategy has helped avoid missing broadcasts
+	// it is a bit wasteful though
+	sniping.lookup[link] = append([]time.Time{at}, sniping.lookup[link]...)
 	return true
 }
 
@@ -107,14 +113,12 @@ func SnipeAt(ctx context.Context, tracked *tracked, at time.Time) error {
 		return nil
 	}
 
-	upcomingAt := tracked.UpcomingAt()
-	if at == upcomingAt {
+	if hasSnipe(link, at) {
 		log.Println("track.SnipeAt:", tracked.Name(), "already sniping at", at)
 		return nil
-	} else if !upcomingAt.IsZero() {
-		log.Println("track.SnipeAt:", tracked.Name(), "at", at.Format(time.UnixDate))
 	}
 
+	log.Println("track.SnipeAt:", tracked.Name(), "at", at.Format(time.UnixDate))
 	go snipe(ctx, tracked, at)
 
 	return nil

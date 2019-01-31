@@ -146,20 +146,16 @@ func (t *tracked) IsOffline() bool {
 
 // UpcomingAt for target
 func (t *tracked) UpcomingAt() time.Time {
-	t.RLock()
-	defer t.RUnlock()
+	link := t.Link()
+
+	sniping.RLock()
+	lst := sniping.lookup[link]
+	sniping.RUnlock()
 
 	var at time.Time
-	now := time.Now()
-	sniping.RLock()
-	for _, t := range sniping.lookup[t.Link()] {
-		if at.IsZero() {
-			at = t
-		} else if t.After(now) && t.Before(at) {
-			at = t
-		}
+	if len(lst) > 0 {
+		at = lst[0]
 	}
-	sniping.RUnlock()
 
 	return at
 }
