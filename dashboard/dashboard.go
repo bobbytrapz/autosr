@@ -62,8 +62,9 @@ func debug(s string) {
 func Run(bColor bool) {
 	shouldColorLogo = bColor
 	// connect to server
+	addr := options.Get("listen_on")
 	var err error
-	remote, err = rpc.DialHTTP("tcp", "localhost:4846")
+	remote, err = rpc.DialHTTP("tcp", addr)
 	if err != nil {
 		fmt.Println("We cannot connect to the server. Try 'autosr stop' then try again.")
 		return
