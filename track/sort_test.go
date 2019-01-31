@@ -23,9 +23,8 @@ import (
 )
 
 type dummy struct {
-	name    string
-	display string
-	link    string
+	name string
+	link string
 }
 
 // BeginSnipe callback
@@ -45,7 +44,7 @@ func (t dummy) EndSave() {
 
 // Display for display in dashboard
 func (t dummy) Display() string {
-	return t.display
+	return t.name
 }
 
 // Name is the streamers real name
@@ -73,20 +72,20 @@ func (t dummy) SavePath() string {
 	return ""
 }
 
-func TestSort(t *testing.T) {
+func TestSortByUrgency(t *testing.T) {
 	a := dummy{
 		name: "菅 原 早 記",
 		link: "https://www.showroom-live.com/48_SUGAHARA_SAKI",
 	}
 
 	b := dummy{
-		name: "齊 藤 京 子",
-		link: "https://www.showroom-live.com/46_KYOKO_SAITO",
+		name: "田 口 愛 佳",
+		link: "https://www.showroom-live.com/48_Manaka_Taguchi",
 	}
 
 	c := dummy{
-		name: "田 口 愛 佳",
-		link: "https://www.showroom-live.com/48_Manaka_Taguchi",
+		name: "齊 藤 京 子",
+		link: "https://www.showroom-live.com/46_KYOKO_SAITO",
 	}
 
 	{
@@ -105,10 +104,10 @@ func TestSort(t *testing.T) {
 		sort.Sort(byUrgency(got))
 		want := []*tracked{
 			&tracked{
-				target: b,
+				target: c,
 			},
 			&tracked{
-				target: c,
+				target: b,
 			},
 			&tracked{
 				target: a,
@@ -135,10 +134,12 @@ func TestSort(t *testing.T) {
 			},
 		}
 		now := time.Now()
-		addSnipe(got[1].Link(), now)
-		addSnipe(got[2].Link(), now.Add(15*time.Minute))
+		addSnipe(a.Link(), now)
+		defer delSnipe(a.Link(), now)
+		addSnipe(c.Link(), now.Add(15*time.Minute))
+		defer delSnipe(c.Link(), now.Add(15*time.Minute))
 
-		diff := got[2].UpcomingAt().Sub(got[1].UpcomingAt())
+		diff := got[2].UpcomingAt().Sub(got[0].UpcomingAt())
 		if diff != 15*time.Minute {
 			t.Error("want", 15*time.Minute, "got", diff)
 		}
@@ -147,13 +148,13 @@ func TestSort(t *testing.T) {
 
 		want := []*tracked{
 			&tracked{
-				target: b,
+				target: a,
 			},
 			&tracked{
 				target: c,
 			},
 			&tracked{
-				target: a,
+				target: b,
 			},
 		}
 
@@ -161,6 +162,58 @@ func TestSort(t *testing.T) {
 			if want[ndx].Name() != got[ndx].Name() {
 				t.Error("want", want[ndx].Name(), "got", got[ndx].Name())
 			}
+		}
+	}
+}
+
+func TestSortUpcomingSameTime(t *testing.T) {
+	// bug: in the dashboard targets with the same upcoming time
+	// did not always appear in the same order
+	// so the names jumped around
+	a := &tracked{
+		target: dummy{
+			name: "菅 原 早 記",
+			link: "https://www.showroom-live.com/48_SUGAHARA_SAKI",
+		},
+	}
+
+	b := &tracked{
+		target: dummy{
+			name: "齊 藤 京 子",
+			link: "https://www.showroom-live.com/46_KYOKO_SAITO",
+		},
+	}
+
+	c := &tracked{
+		target: dummy{
+			name: "田 口 愛 佳",
+			link: "https://www.showroom-live.com/48_Manaka_Taguchi",
+		},
+	}
+
+	at := time.Now()
+
+	// a is coming up a bit later so should always be last
+	addSnipe(a.Link(), at.Add(10*time.Minute))
+	defer delSnipe(a.Link(), at.Add(10*time.Minute))
+
+	// b and c are coming on at the same time
+	// one should consistently be displayed before the other
+	addSnipe(b.Link(), at)
+	defer delSnipe(b.Link(), at)
+	addSnipe(c.Link(), at)
+	defer delSnipe(c.Link(), at)
+
+	tracking[a.Link()] = a
+	tracking[b.Link()] = b
+	tracking[c.Link()] = c
+
+	got := Display()
+	want := []*tracked{b, c, a}
+
+	for ndx := range got.Upcoming {
+		if want[ndx].Name() != got.Upcoming[ndx].Name {
+			t.Error("want", want[ndx].Name(), "got", got.Upcoming[ndx].Name)
 		}
 	}
 }

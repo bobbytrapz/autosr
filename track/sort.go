@@ -35,7 +35,12 @@ func (s byUrgency) Less(a, b int) bool {
 	}
 
 	if s[a].IsLive() && s[b].IsLive() {
-		return s[a].StartedAt().After(s[b].StartedAt())
+		aT := s[a].StartedAt()
+		bT := s[b].StartedAt()
+		if aT == bT {
+			return s[a].Link() < s[b].Link()
+		}
+		return aT.After(bT)
 	}
 
 	if s[a].IsUpcoming() && !s[b].IsUpcoming() {
@@ -47,11 +52,21 @@ func (s byUrgency) Less(a, b int) bool {
 	}
 
 	if s[a].IsUpcoming() && s[b].IsUpcoming() {
-		return s[a].UpcomingAt().Before(s[b].UpcomingAt())
+		aT := s[a].UpcomingAt()
+		bT := s[b].UpcomingAt()
+		if aT == bT {
+			return s[a].Link() < s[b].Link()
+		}
+		return aT.Before(bT)
 	}
 
 	if s[a].FinishedAt() != s[b].FinishedAt() {
-		return s[a].FinishedAt().After(s[b].FinishedAt())
+		aT := s[a].FinishedAt()
+		bT := s[b].FinishedAt()
+		if aT == bT {
+			return s[a].Link() < s[b].Link()
+		}
+		return aT.After(bT)
 	}
 
 	return s[a].Link() < s[b].Link()
