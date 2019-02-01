@@ -87,6 +87,7 @@ Dashboard controls:
 	q - Quit dashboard. Use 'autosr stop' to actually stop autosr
 	r - Check if any streams are on right away
 	o - Open link to stream in web browser
+	right-click - Open link to stream in web browser
 
 This program comes with ABSOLUTELY NO WARRANTY;
 This is free software, and you are welcome to redistribute it under certain conditions.
