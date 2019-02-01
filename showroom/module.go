@@ -62,6 +62,7 @@ func (m Module) AddTarget(ctx context.Context, link string) (track.Target, error
 	}
 
 	name := strings.TrimSpace(s.Name)
+	// note: this works around a display bug in gocui
 	var buf bytes.Buffer
 	for _, r := range name {
 		buf.WriteRune(r)
@@ -69,10 +70,11 @@ func (m Module) AddTarget(ctx context.Context, link string) (track.Target, error
 			buf.WriteRune(' ')
 		}
 	}
+	display := buf.String()
 
 	added := target{
 		name:    name,
-		display: buf.String(),
+		display: display,
 		id:      s.ID,
 		link:    link,
 		urlKey:  s.LiveRoom.URLKey,
