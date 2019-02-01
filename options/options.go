@@ -39,7 +39,7 @@ func Get(k string) string {
 	return v.GetString(k)
 }
 
-// GetDuration an option
+// GetDuration option
 func GetDuration(k string) time.Duration {
 	m.RLock()
 	defer m.RUnlock()
