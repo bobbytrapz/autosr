@@ -245,6 +245,11 @@ func keys(g *gocui.Gui) (err error) {
 		return
 	}
 
+	// mouse
+	if err = g.SetKeybinding("target-list", gocui.MouseRight, gocui.ModNone, openTarget); err != nil {
+		return
+	}
+
 	return
 }
 
