@@ -365,6 +365,6 @@ func reloadTargets(g *gocui.Gui, v *gocui.View) error {
 }
 
 func openHomepage(g *gocui.Gui, v *gocui.View) error {
-	openLink("https://github.com/bobbytrapz/autosr")
+	openLink("https://github.com/bobbytrapz/autosr#readme")
 	return nil
 }
