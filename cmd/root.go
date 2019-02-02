@@ -88,6 +88,8 @@ Dashboard controls:
 	r - Check if any streams are on right away
 	o - Open link to stream in web browser
 	click - Open link to stream in web browser
+	Enter - Open link to stream in web browser
+	Home - Jump to top of list
 
 This program comes with ABSOLUTELY NO WARRANTY;
 This is free software, and you are welcome to redistribute it under certain conditions.

@@ -224,6 +224,14 @@ func keys(g *gocui.Gui) (err error) {
 		return
 	}
 
+	if err = g.SetKeybinding("target-list", gocui.KeyEnter, gocui.ModNone, openTarget); err != nil {
+		return
+	}
+
+	if err = g.SetKeybinding("target-list", gocui.KeyHome, gocui.ModNone, scrollToTop); err != nil {
+		return
+	}
+
 	// mouse
 	if err = g.SetKeybinding("target-list", gocui.MouseLeft, gocui.ModNone, openTarget); err != nil {
 		return
@@ -366,5 +374,11 @@ func reloadTargets(g *gocui.Gui, v *gocui.View) error {
 
 func openHomepage(g *gocui.Gui, v *gocui.View) error {
 	openLink("https://github.com/bobbytrapz/autosr#readme")
+	return nil
+}
+
+func scrollToTop(g *gocui.Gui, v *gocui.View) error {
+	v.SetOrigin(0, 0)
+	v.SetCursor(0, 0)
 	return nil
 }
