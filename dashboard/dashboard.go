@@ -137,15 +137,10 @@ func drawLogo(v *gocui.View) {
 	}
 }
 
-var table = make([]track.DisplayRow, 0)
-
 func drawTargetList(v *gocui.View) {
 	v.Clear()
 	v.SelBgColor = 0
 	v.SelFgColor = 0
-
-	numLive := len(res.TrackTable.Live)
-	numUpcoming := len(res.TrackTable.Upcoming)
 
 	if numRows() == 0 {
 		fmt.Fprintln(v, "Written by Bobby. (@pibisubukebe)")
@@ -159,26 +154,6 @@ func drawTargetList(v *gocui.View) {
 
 	// write display to view
 	res.TrackTable.Output(v)
-
-	// sync table with display for controls
-	table = nil
-	for _, row := range res.TrackTable.Live {
-		table = append(table, row)
-	}
-	if numLive > 0 {
-		table = append(table, track.DisplayRow{})
-	}
-
-	for _, row := range res.TrackTable.Upcoming {
-		table = append(table, row)
-	}
-	if numUpcoming > 0 {
-		table = append(table, track.DisplayRow{})
-	}
-
-	for _, row := range res.TrackTable.Offline {
-		table = append(table, row)
-	}
 }
 
 func layout(g *gocui.Gui) error {
@@ -323,14 +298,48 @@ func moveDown(g *gocui.Gui, v *gocui.View) error {
 	return nil
 }
 
-func selected(v *gocui.View) track.DisplayRow {
-	_, oy := v.Origin()
+func selected(v *gocui.View) (row track.DisplayRow) {
 	_, cy := v.Cursor()
-	return table[oy+cy]
+	line, err := v.Line(cy)
+	if err != nil {
+		return
+	}
+
+	sp := strings.SplitN(line, " ", 3)
+	var name string
+	if len(sp) == 2 {
+		name = sp[1]
+	} else if len(sp) == 3 {
+		name = sp[2]
+	} else {
+		return
+	}
+	name = strings.TrimLeft(name, " ")
+
+	for _, row := range res.TrackTable.Live {
+		if row.Name == name {
+			return row
+		}
+	}
+
+	for _, row := range res.TrackTable.Upcoming {
+		if row.Name == name {
+			return row
+		}
+	}
+
+	for _, row := range res.TrackTable.Offline {
+		if row.Name == name {
+			return row
+		}
+	}
+
+	return
 }
 
 func openTarget(g *gocui.Gui, v *gocui.View) error {
-	openLink(selected(v).Link)
+	row := selected(v)
+	openLink(row.Link)
 	return nil
 }
 
