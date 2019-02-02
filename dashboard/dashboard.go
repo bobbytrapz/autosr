@@ -197,6 +197,15 @@ func keys(g *gocui.Gui) (err error) {
 		return
 	}
 
+	// logo
+	if err = g.SetKeybinding("logo", gocui.MouseLeft, gocui.ModNone, openHomepage); err != nil {
+		return
+	}
+
+	if err = g.SetKeybinding("logo", gocui.MouseRight, gocui.ModNone, openHomepage); err != nil {
+		return
+	}
+
 	// cursor select
 	if err = g.SetKeybinding("target-list", gocui.KeyArrowUp, gocui.ModNone, moveUp); err != nil {
 		return
@@ -216,6 +225,10 @@ func keys(g *gocui.Gui) (err error) {
 	}
 
 	// mouse
+	if err = g.SetKeybinding("target-list", gocui.MouseLeft, gocui.ModNone, openTarget); err != nil {
+		return
+	}
+
 	if err = g.SetKeybinding("target-list", gocui.MouseRight, gocui.ModNone, openTarget); err != nil {
 		return
 	}
@@ -348,5 +361,10 @@ func reloadTargets(g *gocui.Gui, v *gocui.View) error {
 		return fmt.Errorf("dashboard.reloadTargets: %s", err)
 	}
 	redraw(g)
+	return nil
+}
+
+func openHomepage(g *gocui.Gui, v *gocui.View) error {
+	openLink("https://github.com/bobbytrapz/autosr")
 	return nil
 }
