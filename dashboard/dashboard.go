@@ -20,7 +20,6 @@ import (
 	"net/rpc"
 	"strings"
 	"sync"
-	"text/tabwriter"
 	"time"
 
 	"github.com/bobbytrapz/autosr/ipc"
@@ -148,7 +147,6 @@ func drawTargetList(v *gocui.View) {
 	numLive := len(res.TrackTable.Live)
 	numUpcoming := len(res.TrackTable.Upcoming)
 
-	tw := tabwriter.NewWriter(v, 0, 0, 4, ' ', 0)
 	if numRows() == 0 {
 		fmt.Fprintln(v, "Written by Bobby. (@pibisubukebe)")
 		fmt.Fprintln(v, "use 'autosr track' to add targets.")
@@ -159,31 +157,28 @@ func drawTargetList(v *gocui.View) {
 	v.SelBgColor = colorFromString(options.Get("select_fg_color"))
 	v.SelFgColor = colorFromString(options.Get("select_bg_color"))
 
+	// write display to view
+	res.TrackTable.Output(v)
+
+	// sync table with display for controls
 	table = nil
 	for _, row := range res.TrackTable.Live {
-		fmt.Fprintf(tw, "%s\t%s\n", row.Status, row.Name)
 		table = append(table, row)
 	}
 	if numLive > 0 {
-		fmt.Fprintln(tw, "\t\t\t")
 		table = append(table, track.DisplayRow{})
 	}
 
 	for _, row := range res.TrackTable.Upcoming {
-		fmt.Fprintf(tw, "%s\t%s\n", row.Status, row.Name)
 		table = append(table, row)
 	}
 	if numUpcoming > 0 {
-		fmt.Fprintln(tw, "\t\t\t")
 		table = append(table, track.DisplayRow{})
 	}
 
 	for _, row := range res.TrackTable.Offline {
-		fmt.Fprintf(tw, "%s\t%s\n", row.Status, row.Name)
 		table = append(table, row)
 	}
-
-	tw.Flush()
 }
 
 func layout(g *gocui.Gui) error {
