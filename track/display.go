@@ -73,14 +73,28 @@ func displayRow(t *tracked) (row DisplayRow, err error) {
 	return
 }
 
-func displayList(lst []*tracked) (d []DisplayRow) {
+func displayList(lst []*tracked) (rows []DisplayRow) {
+	var seen []string
 	for _, t := range lst {
 		row, err := displayRow(t)
-		if err == nil {
-			d = append(d, row)
-		} else {
+		if err != nil {
+			// log but ignore invalid row error
 			log.Println("track.displayList:", err)
+			continue
 		}
+
+		// display a row name as a url if it's name is a duplicate
+		for _, name := range seen {
+			if row.Name == name {
+				row.Name = row.Link
+			}
+		}
+
+		if row.Name != row.Link {
+			seen = append(seen, row.Name)
+		}
+
+		rows = append(rows, row)
 	}
 
 	return
