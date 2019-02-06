@@ -22,17 +22,13 @@ import (
 	"time"
 )
 
+// a proxy around a module target
+// handles cancellation of target processing
 type tracked struct {
 	sync.RWMutex
 	target     Target
-	cancelSave chan struct{}
-
-	// schelduling
-	startedAt  time.Time
+	cancel     chan struct{}
 	finishedAt time.Time
-
-	// recording
-	streamURL string
 }
 
 func (t *tracked) Display() string {
@@ -112,8 +108,8 @@ func (t *tracked) CheckStream(ctx context.Context) (string, error) {
 }
 
 func (t *tracked) Cancel() {
-	if t.cancelSave != nil {
-		close(t.cancelSave)
+	if t.cancel != nil {
+		close(t.cancel)
 	}
 }
 
@@ -121,7 +117,7 @@ func (t *tracked) Cancel() {
 func (t *tracked) SetCancel(ch chan struct{}) {
 	t.Lock()
 	defer t.Unlock()
-	t.cancelSave = ch
+	t.cancel = ch
 }
 
 // IsUpcoming is true if the target has a known upcoming time
@@ -145,46 +141,17 @@ func (t *tracked) IsOffline() bool {
 }
 
 // UpcomingAt for target
-func (t *tracked) UpcomingAt() time.Time {
+func (t *tracked) UpcomingAt() (at time.Time) {
 	link := t.Link()
-
-	sniping.RLock()
-	lst := sniping.lookup[link]
-	sniping.RUnlock()
-
-	var at time.Time
-	if len(lst) > 0 {
-		at = lst[0]
-	}
-
-	return at
+	task, _ := findSnipeTask(link)
+	return task.at
 }
 
 // StartedAt for target
 func (t *tracked) StartedAt() time.Time {
-	t.RLock()
-	defer t.RUnlock()
-	return t.startedAt
-}
-
-// SetStartedAt for target
-func (t *tracked) SetStartedAt(at time.Time) error {
-	t.Lock()
-	defer t.Unlock()
-
-	if t.target == nil {
-		return errors.New("track.SetStartedAt: target is nil")
-	}
-
-	if err := addSave(t.target.Link()); err != nil {
-		return err
-	}
-
-	t.startedAt = at
-
-	t.target.BeginSave()
-
-	return nil
+	link := t.Link()
+	_, at := findSaveTask(link)
+	return at
 }
 
 // FinishedAt for target
@@ -198,29 +165,5 @@ func (t *tracked) FinishedAt() time.Time {
 func (t *tracked) SetFinishedAt(at time.Time) {
 	t.Lock()
 	defer t.Unlock()
-
-	if t.target == nil {
-		return
-	}
-
-	delSave(t.target.Link())
-
 	t.finishedAt = at
-
-	t.target.EndSave()
-
-	return
-}
-
-func (t *tracked) StreamURL() string {
-	t.RLock()
-	defer t.RUnlock()
-	return t.streamURL
-}
-
-// SetStreamURL for target
-func (t *tracked) SetStreamURL(url string) {
-	t.Lock()
-	defer t.Unlock()
-	t.streamURL = url
 }

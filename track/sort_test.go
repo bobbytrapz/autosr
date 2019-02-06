@@ -134,10 +134,22 @@ func TestSortByUrgency(t *testing.T) {
 			},
 		}
 		now := time.Now()
-		addSnipe(a.Link(), now)
-		defer delSnipe(a.Link(), now)
-		addSnipe(c.Link(), now.Add(15*time.Minute))
-		defer delSnipe(c.Link(), now.Add(15*time.Minute))
+
+		atask := snipeTask{
+			name: a.Name(),
+			link: a.Link(),
+			at:   now,
+		}
+		addSnipeTask(atask)
+		defer delSnipeTask(atask)
+
+		ctask := snipeTask{
+			name: c.Name(),
+			link: c.Link(),
+			at:   now.Add(15 * time.Minute),
+		}
+		addSnipeTask(ctask)
+		defer delSnipeTask(ctask)
 
 		diff := got[2].UpcomingAt().Sub(got[0].UpcomingAt())
 		if diff != 15*time.Minute {
@@ -194,15 +206,31 @@ func TestSortUpcomingSameTime(t *testing.T) {
 	at := time.Now()
 
 	// a is coming up a bit later so should always be last
-	addSnipe(a.Link(), at.Add(10*time.Minute))
-	defer delSnipe(a.Link(), at.Add(10*time.Minute))
+	atask := snipeTask{
+		name: a.Name(),
+		link: a.Link(),
+		at:   at.Add(10 * time.Minute),
+	}
+	addSnipeTask(atask)
+	defer delSnipeTask(atask)
 
 	// b and c are coming on at the same time
 	// one should consistently be displayed before the other
-	addSnipe(b.Link(), at)
-	defer delSnipe(b.Link(), at)
-	addSnipe(c.Link(), at)
-	defer delSnipe(c.Link(), at)
+	btask := snipeTask{
+		name: b.Name(),
+		link: b.Link(),
+		at:   at,
+	}
+	addSnipeTask(btask)
+	defer delSnipeTask(btask)
+
+	ctask := snipeTask{
+		name: c.Name(),
+		link: c.Link(),
+		at:   at,
+	}
+	addSnipeTask(ctask)
+	defer delSnipeTask(ctask)
 
 	tracking[a.Link()] = a
 	tracking[b.Link()] = b

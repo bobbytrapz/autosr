@@ -31,17 +31,26 @@ import (
 var rw sync.RWMutex
 var tracking = make(map[string]*tracked)
 
-func getTracked(link string) (tracked *tracked, err error) {
+func beginTracking(t *tracked) {
+	rw.Lock()
+	defer rw.Unlock()
+	tracking[t.Link()] = t
+}
+
+func getTracking(link string) *tracked {
 	rw.RLock()
 	defer rw.RUnlock()
-
-	tracked = tracking[link]
-
-	if tracked == nil {
-		err = fmt.Errorf("track.getTracked: did not find: %s", link)
-		return
+	if t, ok := tracking[link]; ok {
+		return t
 	}
+	return nil
+}
 
+func endTracking(link string) (removed *tracked) {
+	rw.Lock()
+	defer rw.Unlock()
+	removed = tracking[link]
+	delete(tracking, link)
 	return
 }
 
@@ -124,10 +133,8 @@ func Wait() {
 
 // AddTarget for tracking
 func AddTarget(ctx context.Context, link string) error {
-	rw.RLock()
-	_, ok := tracking[link]
-	rw.RUnlock()
-	if ok {
+	if getTracking(link) != nil {
+		// silently ignore attempt to add a target we already have
 		return nil
 	}
 
@@ -150,19 +157,17 @@ func AddTarget(ctx context.Context, link string) error {
 		return errors.New("track.AddTarget: target is nil")
 	}
 
-	rw.Lock()
 	fmt.Println(host, "added", link)
 	added := &tracked{
 		target: target,
 	}
-	tracking[link] = added
-	rw.Unlock()
+	beginTracking(added)
 
 	// check target right away
 	if _, err := target.CheckStream(ctx); err == nil {
 		log.Println("track.AddTarget:", target.Name(), "is live now!")
 		// they are live now so try to snipe them now
-		if err = SnipeAt(ctx, added, time.Now()); err != nil {
+		if err = snipeAt(ctx, added, time.Now()); err != nil {
 			log.Println("track.AddTarget:", err)
 		}
 	}
@@ -172,11 +177,7 @@ func AddTarget(ctx context.Context, link string) error {
 
 // RemoveTarget from tracking
 func RemoveTarget(ctx context.Context, link string) error {
-	rw.RLock()
-	tracked, ok := tracking[link]
-	rw.RUnlock()
-
-	if !ok {
+	if getTracking(link) == nil {
 		return errors.New("track.RemoveTarget: we are not tracking this target")
 	}
 
@@ -191,6 +192,15 @@ func RemoveTarget(ctx context.Context, link string) error {
 		return err
 	}
 
+	// if the module fails we still want to remove the target ourselves
+	defer func() {
+		if t := endTracking(link); t != nil {
+			t.Cancel()
+			fmt.Println(host, "removed", link)
+		}
+	}()
+
+	// remove target from module
 	target, err := m.RemoveTarget(ctx, link)
 	if err != nil {
 		return fmt.Errorf("track.RemoveTarget: %s %s", link, err)
@@ -199,27 +209,16 @@ func RemoveTarget(ctx context.Context, link string) error {
 		return errors.New("track.RemoveTarget: target is nil")
 	}
 
-	rw.Lock()
-	delete(tracking, link)
-	rw.Unlock()
-
-	tracked.Cancel()
-	fmt.Println(host, "removed", link)
-
 	return nil
 }
 
 // CancelTarget processing
 func CancelTarget(link string) error {
-	rw.Lock()
-	tracked, ok := tracking[link]
-	rw.Unlock()
-
-	if !ok {
+	t := getTracking(link)
+	if t == nil {
 		return fmt.Errorf("track.CancelTarget: did not find: %s", link)
 	}
-
-	tracked.Cancel()
+	t.Cancel()
 
 	return nil
 }

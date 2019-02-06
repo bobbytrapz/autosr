@@ -49,6 +49,7 @@ func beginPoll(ctx context.Context) error {
 func poll(ctx context.Context, module Module) error {
 	hostname := module.Hostname()
 
+	// helps make the logic below easier to follow
 	attempt := func() {
 		err := module.CheckUpcoming(ctx)
 		if err != nil {

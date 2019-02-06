@@ -29,118 +29,177 @@ import (
 	"github.com/bobbytrapz/autosr/options"
 )
 
-var saving = struct {
-	sync.RWMutex
-	lookup map[string]bool
-}{
-	lookup: make(map[string]bool),
+// when a stream appears to end we wait to see if the user comes back
+// online just in case there was a problem with the stream
+var recoverTimeout = 5 * time.Minute
+
+type saveTask struct {
+	name string
+	link string
 }
 
-func hasSave(link string) bool {
+var saving = struct {
+	sync.RWMutex
+	tasks map[saveTask]time.Time
+}{
+	tasks: make(map[saveTask]time.Time),
+}
+
+// find the most recent save for a link
+func findSaveTask(link string) (task saveTask, createdAt time.Time) {
 	saving.RLock()
 	defer saving.RUnlock()
-	_, ok := saving.lookup[link]
+
+	// find the most recently added save task matching our target
+	for t, at := range saving.tasks {
+		if t.link == link {
+			if createdAt.IsZero() || at.After(createdAt) {
+				createdAt = at
+				task = t
+			}
+		}
+	}
+
+	return
+}
+
+func hasSaveTask(task saveTask) bool {
+	saving.RLock()
+	defer saving.RUnlock()
+	_, ok := saving.tasks[task]
 	return ok
 }
 
-func addSave(link string) error {
-	saving.Lock()
-	defer saving.Unlock()
-	if _, ok := saving.lookup[link]; ok {
-		return errors.New("track.addSave: stream is already being downloaded")
+// give true if it is newly added
+func addSaveTask(task saveTask) bool {
+	if hasSaveTask(task) {
+		return false
 	}
-	saving.lookup[link] = true
-	return nil
-}
-
-func delSave(link string) {
 	saving.Lock()
 	defer saving.Unlock()
-	delete(saving.lookup, link)
+	saving.tasks[task] = time.Now()
+	return true
 }
 
-// Save recording of a stream to disk
-func Save(ctx context.Context, tracked *tracked) error {
-	name := tracked.Name()
+func delSaveTask(task saveTask) {
+	saving.Lock()
+	defer saving.Unlock()
+	delete(saving.tasks, task)
+}
 
-	link := tracked.Link()
+// record stream to disk using external program
+func performSave(ctx context.Context, t *tracked, streamURL string) error {
+	wg.Add(1)
+	defer wg.Done()
+
+	name := t.Name()
+
+	link := t.Link()
 	if link == "" {
-		return errors.New("track.Save: no link")
+		return errors.New("track.save: no link")
 	}
 
-	streamURL := tracked.StreamURL()
 	if streamURL == "" {
-		return errors.New("track.Save: no stream url")
+		return errors.New("track.save: no stream url")
 	}
 
-	if err := tracked.SetStartedAt(time.Now()); err != nil {
-		return fmt.Errorf("track.Save: %s", err)
+	task := saveTask{
+		name: t.Name(),
+		link: t.Link(),
+	}
+	if !addSaveTask(task) {
+		log.Println("track.save: already saving", task.name)
+		return nil
+	}
+	defer func() {
+		delSaveTask(task)
+		t.EndSave()
+	}()
+	t.BeginSave()
+	log.Println("track.save:", task.name)
+
+	// used by command monitor to indicate that the command has exited
+	exit := make(chan error, 1)
+
+	// command information set in the closure below
+	var cmd *exec.Cmd
+	var app string
+	var pid int
+
+	// will be called again if we manage to recover a stream
+	runSave := func(url string) error {
+		var err error
+		cmd, err = runDownloader(ctx, url, name)
+		if err != nil {
+			return fmt.Errorf("track.save: %s", err)
+		}
+
+		if err := cmd.Start(); err != nil {
+			return fmt.Errorf("track.save: %s", err)
+		}
+		app = cmd.Args[0]
+		pid = cmd.Process.Pid
+		log.Printf("track.save: %s [%s %d]", name, app, pid)
+
+		// monitor downloader
+		go func() {
+			err := cmd.Wait()
+			exit <- err
+		}()
+
+		return nil
 	}
 
-	cmd, err := RunDownloader(ctx, streamURL, name)
-	if err != nil {
-		return fmt.Errorf("track.Save: %s", err)
+	// try to run the save command now
+	if err := runSave(streamURL); err != nil {
+		return err
 	}
-
-	if err := cmd.Start(); err != nil {
-		return fmt.Errorf("track.Save: %s", err)
-	}
-	app := cmd.Args[0]
-	pid := cmd.Process.Pid
-	log.Printf("track.Save: %s [%s %d]", name, app, pid)
 
 	cancelSave := make(chan struct{})
-	tracked.SetCancel(cancelSave)
-
-	exit := make(chan error, 1)
-	// monitor downloader
-	go func() {
-		err := cmd.Wait()
-		exit <- err
-	}()
+	t.SetCancel(cancelSave)
 
 	// handle closing downloader
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-
-		for {
-			select {
-			case <-ctx.Done():
-				cmd.Process.Kill()
-				err := cmd.Wait()
-				tracked.SetFinishedAt(time.Now())
-				log.Printf("track.Save: %s %s [%s %d] (%s)", name, ctx.Err(), app, pid, err)
-				return
-			case <-cancelSave:
-				// we have been selected for cancellation
-				cmd.Process.Kill()
-				err := cmd.Wait()
-				tracked.SetFinishedAt(time.Now())
-				log.Printf("track.Save: %s canceled [%s %d] (%s)", name, app, pid, err)
-				return
-			case err := <-exit:
+	for {
+		select {
+		case <-ctx.Done():
+			cmd.Process.Kill()
+			err := cmd.Wait()
+			t.SetFinishedAt(time.Now())
+			log.Printf("track.save: %s %s [%s %d] (%s)", name, ctx.Err(), app, pid, err)
+			return nil
+		case <-cancelSave:
+			// we have been selected for cancellation
+			cmd.Process.Kill()
+			err := cmd.Wait()
+			t.SetFinishedAt(time.Now())
+			log.Printf("track.save: %s canceled [%s %d] (%s)", name, app, pid, err)
+			return nil
+		case err := <-exit:
+			if err != nil {
+				// something may have gone wrong so try to recover
+				log.Printf("track.save: %s exited [%s %d]", name, app, pid)
+				d, newURL, err := maybeRecover(ctx, t)
 				if err != nil {
-					// something may have gone wrong so try again right now
-					log.Printf("track.Save: %s exited [%s %d]", name, app, pid)
-					snipeMaybeEnded(ctx, tracked)
-				} else {
-					log.Printf("track.Save: %s exit ok [%s %d]", name, app, pid)
-					tracked.SetFinishedAt(time.Now())
+					// we did not recover so end this save
+					t.SetFinishedAt(time.Now().Add(-d))
+					return nil
 				}
-				return
+				log.Printf("track.save: %s recovered (%s)", name, d.Truncate(time.Millisecond))
+				// run a new save command
+				runSave(newURL)
+			} else {
+				log.Printf("track.save: %s exit ok [%s %d]", name, app, pid)
+				t.SetFinishedAt(time.Now())
+				return nil
 			}
 		}
-	}()
-
-	return nil
+	}
 }
 
-// RunDownloader runs the user's downloader
-func RunDownloader(ctx context.Context, url, name string) (cmd *exec.Cmd, err error) {
+// runs the user's downloader
+func runDownloader(ctx context.Context, url, name string) (cmd *exec.Cmd, err error) {
 	saveTo := filepath.Join(options.Get("save_to"), name)
 	ua := fmt.Sprintf("User-Agent=%s", options.Get("user_agent"))
-	app := options.Get("download_with")
 
 	fn := fmt.Sprintf("%s-%s", time.Now().Format("2006-01-02"), name)
 	saveAs := fn
@@ -153,6 +212,7 @@ func RunDownloader(ctx context.Context, url, name string) (cmd *exec.Cmd, err er
 	}
 	saveAs = saveAs + ".ts"
 
+	app := options.Get("download_with")
 	args := []string{
 		"--http-header", ua,
 		"-o", saveAs,
@@ -170,4 +230,35 @@ func RunDownloader(ctx context.Context, url, name string) (cmd *exec.Cmd, err er
 	setArgs(cmd)
 
 	return cmd, nil
+}
+
+func maybeRecover(ctx context.Context, t *tracked) (duration time.Duration, streamURL string, err error) {
+	beginAt := time.Now()
+	defer func() {
+		endAt := time.Now()
+		duration = endAt.Sub(beginAt)
+	}()
+
+	name := t.Name()
+	log.Println("track.maybeRecover:", name, "begin")
+
+	err = waitForLive(ctx, t, recoverTimeout)
+	if err != nil {
+		log.Println("track.maybeRecover:", name, "is not online")
+		err = errors.New("track.maybeRecover: target is not live")
+		return
+	}
+	log.Println("track.maybeRecover:", name, "is online")
+
+	streamURL, err = waitForStream(ctx, t, recoverTimeout)
+	if err != nil {
+		// we failed to find the new url
+		log.Println("track.maybeRecover:", name, "did not find url")
+		err = errors.New("track.maybeRecover: did not find url")
+		return
+	}
+
+	log.Println("track.maybeRecover:", name, "found url")
+
+	return
 }
