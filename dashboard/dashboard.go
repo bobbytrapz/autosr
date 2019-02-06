@@ -360,7 +360,7 @@ func selected(v *gocui.View) (row track.DisplayRow) {
 
 func openTarget(g *gocui.Gui, v *gocui.View) error {
 	row := selected(v)
-	openLink(row.Link)
+	go openLink(row.Link)
 	return nil
 }
 
@@ -373,7 +373,7 @@ func reloadTargets(g *gocui.Gui, v *gocui.View) error {
 }
 
 func openHomepage(g *gocui.Gui, v *gocui.View) error {
-	openLink("https://github.com/bobbytrapz/autosr#readme")
+	go openLink("https://github.com/bobbytrapz/autosr#readme")
 	return nil
 }
 
