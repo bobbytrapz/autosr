@@ -88,7 +88,7 @@ func TestSortByUrgency(t *testing.T) {
 		link: "https://www.showroom-live.com/46_KYOKO_SAITO",
 	}
 
-	{
+	t.Run("all targets have the same time", func(t *testing.T) {
 		got := []*tracked{
 			&tracked{
 				target: a,
@@ -119,9 +119,9 @@ func TestSortByUrgency(t *testing.T) {
 				t.Error("want", want[ndx].Name(), "got", got[ndx].Name())
 			}
 		}
-	}
+	})
 
-	{
+	t.Run("two targets have upcoming times", func(t *testing.T) {
 		got := []*tracked{
 			&tracked{
 				target: a,
@@ -163,7 +163,7 @@ func TestSortByUrgency(t *testing.T) {
 				t.Error("want", want[ndx].Name(), "got", got[ndx].Name())
 			}
 		}
-	}
+	})
 }
 
 func TestSortUpcomingSameTime(t *testing.T) {
