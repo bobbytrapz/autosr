@@ -90,26 +90,26 @@ func TestSortByUrgency(t *testing.T) {
 
 	t.Run("all targets have the same time", func(t *testing.T) {
 		got := []*tracked{
-			&tracked{
+			{
 				target: a,
 			},
-			&tracked{
+			{
 				target: b,
 			},
-			&tracked{
+			{
 				target: c,
 			},
 		}
 
 		sort.Sort(byUrgency(got))
 		want := []*tracked{
-			&tracked{
+			{
 				target: c,
 			},
-			&tracked{
+			{
 				target: b,
 			},
-			&tracked{
+			{
 				target: a,
 			},
 		}
@@ -123,13 +123,13 @@ func TestSortByUrgency(t *testing.T) {
 
 	t.Run("two targets have upcoming times", func(t *testing.T) {
 		got := []*tracked{
-			&tracked{
+			{
 				target: a,
 			},
-			&tracked{
+			{
 				target: b,
 			},
-			&tracked{
+			{
 				target: c,
 			},
 		}
@@ -159,13 +159,13 @@ func TestSortByUrgency(t *testing.T) {
 		sort.Sort(byUrgency(got))
 
 		want := []*tracked{
-			&tracked{
+			{
 				target: a,
 			},
-			&tracked{
+			{
 				target: c,
 			},
-			&tracked{
+			{
 				target: b,
 			},
 		}
