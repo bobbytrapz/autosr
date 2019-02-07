@@ -236,6 +236,26 @@ func (dargs downloaderArgs) ReplaceIn(command string) (app string, args []string
 
 // runs the user's downloader
 func runDownloader(ctx context.Context, streamURL, name string) (cmd *exec.Cmd, err error) {
+	// keep the path safe
+	r := strings.NewReplacer(
+		// linux
+		".", "_",
+		"/", "-",
+		"\\", "-",
+		"*", "★",
+		// windows
+		"<", "(",
+		">", ")",
+		":", "=",
+		"\"", "-",
+		"/", "-",
+		"\\", "-",
+		"|", "-",
+		"?", "_",
+		"*", "★",
+	)
+	name = r.Replace(name)
+
 	saveTo := filepath.Join(options.Get("save_to"), name)
 	ua := options.Get("user_agent")
 
