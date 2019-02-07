@@ -51,7 +51,19 @@ func poll(ctx context.Context, module Module) error {
 
 	// helps make the logic below easier to follow
 	attempt := func() {
-		err := module.CheckUpcoming(ctx)
+		// gather targets
+		var targets []Target
+		for _, t := range tracking {
+			if t.Hostname() == hostname {
+				name := t.Name()
+				link := t.Link()
+				if hasSaveTask(saveTask{name, link}) {
+					continue
+				}
+				targets = append(targets, t.target)
+			}
+		}
+		err := module.CheckUpcoming(ctx, targets)
 		if err != nil {
 			// retry if possible
 			e, ok := retry.Check(err)

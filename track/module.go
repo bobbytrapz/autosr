@@ -24,12 +24,12 @@ import (
 type Module interface {
 	// information
 	Hostname() string
-	// called by track.poll
-	CheckUpcoming(context.Context) error
-	// called by track.Add/RemoveTarget
-	// give the target we added or removed or nil
+	// called by track.poll with a list of targets to check
+	CheckUpcoming(context.Context, []Target) error
+	// called by track.AddTarget
+	// give the target we added or nil
+	// used to gather target information needed for tracking
 	AddTarget(ctx context.Context, link string) (Target, error)
-	RemoveTarget(ctx context.Context, link string) (Target, error)
 }
 
 var modules = make(map[string]Module)

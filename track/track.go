@@ -159,8 +159,9 @@ func AddTarget(ctx context.Context, link string) error {
 
 	fmt.Println(host, "added", link)
 	added := &tracked{
-		target: target,
-		cancel: make(chan struct{}),
+		target:   target,
+		cancel:   make(chan struct{}),
+		hostname: host,
 	}
 	beginTracking(added)
 
@@ -188,26 +189,9 @@ func RemoveTarget(ctx context.Context, link string) error {
 	}
 
 	host := u.Hostname()
-	m, err := FindModule(host)
-	if err != nil {
-		return err
-	}
-
-	// if the module fails we still want to remove the target ourselves
-	defer func() {
-		if t := endTracking(link); t != nil {
-			t.Cancel()
-			fmt.Println(host, "removed", link)
-		}
-	}()
-
-	// remove target from module
-	target, err := m.RemoveTarget(ctx, link)
-	if err != nil {
-		return fmt.Errorf("track.RemoveTarget: %s %s", link, err)
-	}
-	if target == nil {
-		return errors.New("track.RemoveTarget: target is nil")
+	if t := endTracking(link); t != nil {
+		t.Cancel()
+		fmt.Println(host, "removed", link)
 	}
 
 	return nil

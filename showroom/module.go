@@ -36,7 +36,6 @@ type Module struct{}
 var module = Module{}
 
 var rw sync.RWMutex
-var targets = make([]target, 0)
 
 func init() {
 	if err := track.RegisterModule(module); err != nil {
@@ -80,39 +79,11 @@ func (m Module) AddTarget(ctx context.Context, link string) (track.Target, error
 		urlKey:  s.LiveRoom.URLKey,
 	}
 
-	rw.Lock()
-	targets = append(targets, added)
-	rw.Unlock()
-
 	return added, nil
 }
 
-// RemoveTarget from tracking
-func (m Module) RemoveTarget(ctx context.Context, link string) (track.Target, error) {
-	var removed target
-
-	rw.Lock()
-	n := 0
-	for ; n < len(targets); n++ {
-		if targets[n].link == link {
-			removed = targets[n]
-			break
-		}
-	}
-	if n < len(targets) {
-		targets = append(targets[:n], targets[n+1:]...)
-	}
-	rw.Unlock()
-
-	if removed.link != link {
-		return nil, fmt.Errorf("showroom.RemoveTarget: did not find target for %s", link)
-	}
-
-	return &removed, nil
-}
-
 // CheckUpcoming streams and snipe them
-func (m Module) CheckUpcoming(ctx context.Context) error {
+func (m Module) CheckUpcoming(ctx context.Context, targets []track.Target) error {
 	if len(targets) == 0 {
 		log.Println("showroom.CheckUpcoming: no targets")
 		return nil
@@ -124,8 +95,9 @@ func (m Module) CheckUpcoming(ctx context.Context) error {
 	var waitCheck sync.WaitGroup
 	for _, tt := range targets {
 		waitCheck.Add(1)
-		go func(t target) {
+		go func(t track.Target) {
 			defer waitCheck.Done()
+			name := t.Name()
 
 			// each target gets a separate timeout
 			// check is called by poll so we only check for a little while
@@ -135,7 +107,7 @@ func (m Module) CheckUpcoming(ctx context.Context) error {
 			// check target's actual room for stream url or upcoming date
 			var err error
 			if _, err = t.CheckStream(ctx); err == nil {
-				log.Println("showroom.CheckUpcoming:", t.name, "is live now!")
+				log.Println("showroom.CheckUpcoming:", name, "is live now!")
 				// they are live now so snipe them now
 				if err = track.SnipeTargetAt(ctx, t, time.Now()); err != nil {
 					log.Println("showroom.CheckUpcoming:", err)
@@ -162,10 +134,10 @@ func (m Module) CheckUpcoming(ctx context.Context) error {
 						}
 					}
 				case <-timeout.C:
-					log.Println("showroom.CheckUpcoming:", t.name, "timeout")
+					log.Println("showroom.CheckUpcoming:", name, "timeout")
 					return
 				case <-ctx.Done():
-					log.Println("showroom.CheckUpcoming:", t.name, ctx.Err())
+					log.Println("showroom.CheckUpcoming:", name, ctx.Err())
 					return
 				}
 			}

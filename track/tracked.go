@@ -29,6 +29,7 @@ type tracked struct {
 	target     Target
 	cancel     chan struct{}
 	finishedAt time.Time
+	hostname   string
 }
 
 func (t *tracked) Display() string {
@@ -59,6 +60,12 @@ func (t *tracked) Link() string {
 	}
 
 	return t.target.Link()
+}
+
+func (t *tracked) Hostname() string {
+	t.RLock()
+	defer t.RUnlock()
+	return t.hostname
 }
 
 func (t *tracked) BeginSnipe() {
