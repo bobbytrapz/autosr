@@ -16,7 +16,6 @@
 package track
 
 import (
-	"bytes"
 	"context"
 	"errors"
 	"fmt"
@@ -24,8 +23,9 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
+	"strings"
 	"sync"
-	"text/template"
 	"time"
 
 	"github.com/bobbytrapz/autosr/options"
@@ -204,10 +204,43 @@ type downloaderArgs struct {
 	StreamURL string
 }
 
+// resembles go templates
+var argRE = regexp.MustCompile("{{([^}]*)}}")
+
+func (dargs downloaderArgs) ReplaceIn(command string) (app string, args []string) {
+	sp := strings.Split(command, " ")
+	var pats []string
+	app, pats = sp[0], sp[1:]
+	for _, pat := range pats {
+		m := argRE.FindStringSubmatch(pat)
+		if len(m) == 2 {
+			// match found
+			switch m[1] {
+			case "UserAgent":
+				arg := strings.Replace(pat, m[0], dargs.UserAgent, 1)
+				args = append(args, arg)
+			case "SavePath":
+				arg := strings.Replace(pat, m[0], dargs.SavePath, 1)
+				args = append(args, arg)
+			case "StreamURL":
+				arg := strings.Replace(pat, m[0], dargs.StreamURL, 1)
+				args = append(args, arg)
+			default:
+				args = append(args, pat)
+			}
+		} else {
+			// no match
+			args = append(args, pat)
+		}
+	}
+
+	return
+}
+
 // runs the user's downloader
 func runDownloader(ctx context.Context, streamURL, name string) (cmd *exec.Cmd, err error) {
 	saveTo := filepath.Join(options.Get("save_to"), name)
-	ua := fmt.Sprintf("User-Agent=%s", options.Get("user_agent"))
+	ua := options.Get("user_agent")
 
 	fn := fmt.Sprintf("%s-%s", time.Now().Format("2006-01-02"), name)
 	saveAs := fn
@@ -220,17 +253,16 @@ func runDownloader(ctx context.Context, streamURL, name string) (cmd *exec.Cmd, 
 	}
 	saveAs = filepath.Join(saveTo, saveAs+".ts")
 
-	var buf bytes.Buffer
-	downloader := options.Get("download_with")
-	t := template.Must(template.New("").Parse(downloader))
-	args := downloaderArgs{
+	// replace placeholders
+	command := options.Get("download_with")
+	dargs := downloaderArgs{
 		UserAgent: ua,
 		SavePath:  saveAs,
 		StreamURL: streamURL,
 	}
-	t.Execute(&buf, args)
-
-	cmd = runCmd(ctx, buf.String())
+	app, args := dargs.ReplaceIn(command)
+	log.Printf("track.runDownloader: %s %s (%d)\n", app, args, len(args))
+	cmd = exec.CommandContext(ctx, app, args...)
 
 	err = os.MkdirAll(saveTo, os.ModePerm)
 	if err != nil {
