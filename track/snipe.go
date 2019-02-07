@@ -118,6 +118,10 @@ func performSnipe(ctx context.Context, t *tracked, upcomingAt time.Time) (err er
 		link: t.Link(),
 		at:   upcomingAt,
 	}
+	if hasSaveTask(saveTask{task.name, task.link}) {
+		log.Println("track.snipe: already saving", task.name, "so we will not snipe")
+		return
+	}
 	if !addSnipeTask(task) {
 		log.Println("track.snipe: already sniping", task.name, "at", task.at)
 		return
