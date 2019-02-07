@@ -101,6 +101,8 @@ To see help or dashboard controls:
 ```
 autosr help
 ```
+## License
 
+This software is released under the GPL v3 license. See LICENSE.
 
 
