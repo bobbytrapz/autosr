@@ -137,6 +137,9 @@ func performSnipe(ctx context.Context, t *tracked, upcomingAt time.Time) (err er
 		case <-ctx.Done():
 			log.Println("track.snipe:", task.name, ctx.Err())
 			return
+		case <-t.cancel:
+			log.Println("track.snipe:", task.name, "canceled")
+			return
 		case <-check.C:
 			err = waitForLive(ctx, t, snipeTimeout)
 			if err != nil {

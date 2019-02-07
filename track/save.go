@@ -157,9 +157,6 @@ func performSave(ctx context.Context, t *tracked, streamURL string) error {
 		return err
 	}
 
-	cancelSave := make(chan struct{})
-	t.SetCancel(cancelSave)
-
 	// handle closing downloader
 	for {
 		select {
@@ -169,7 +166,7 @@ func performSave(ctx context.Context, t *tracked, streamURL string) error {
 			t.SetFinishedAt(time.Now())
 			log.Printf("track.save: %s %s [%s %d] (%s)", name, ctx.Err(), app, pid, err)
 			return nil
-		case <-cancelSave:
+		case <-t.cancel:
 			// we have been selected for cancellation
 			cmd.Process.Kill()
 			err := cmd.Wait()

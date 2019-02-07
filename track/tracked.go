@@ -108,16 +108,7 @@ func (t *tracked) CheckStream(ctx context.Context) (string, error) {
 }
 
 func (t *tracked) Cancel() {
-	if t.cancel != nil {
-		close(t.cancel)
-	}
-}
-
-// SetCancel for tracked streamer
-func (t *tracked) SetCancel(ch chan struct{}) {
-	t.Lock()
-	defer t.Unlock()
-	t.cancel = ch
+	close(t.cancel)
 }
 
 // IsUpcoming is true if the target has a known upcoming time

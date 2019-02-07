@@ -160,6 +160,7 @@ func AddTarget(ctx context.Context, link string) error {
 	fmt.Println(host, "added", link)
 	added := &tracked{
 		target: target,
+		cancel: make(chan struct{}),
 	}
 	beginTracking(added)
 
