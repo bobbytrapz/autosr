@@ -173,15 +173,17 @@ func waitForLive(ctx context.Context, t *tracked, timeout time.Duration) (err er
 	var liveErr retry.BoolRetryable
 	numAttempts := 0
 	isLive, err = t.CheckLive(ctx)
+	if isLive {
+		return
+	}
 	liveErr, ok = retry.BoolCheck(err)
 	for ; ok; liveErr, ok = retry.BoolCheck(err) {
-		ok, err = liveErr.Retry()
 		select {
 		case <-time.After(backoff.DefaultPolicy.Duration(numAttempts)):
 			numAttempts++
 			isLive, err = liveErr.Retry()
 			if isLive {
-				break
+				return
 			}
 		case <-to.C:
 			log.Println("track.waitForLive:", name, "timeout")
