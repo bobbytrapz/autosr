@@ -16,12 +16,12 @@
 package track
 
 import (
+	"context"
+	"log"
 	"os/exec"
-	"syscall"
 )
 
-func setArgs(cmd *exec.Cmd) {
-	cmd.SysProcAttr = &syscall.SysProcAttr{
-		Setpgid: true,
-	}
+func runCmd(ctx context.Context, command string) *exec.Cmd {
+	log.Printf("track.runDownloader: run sh -c %q\n", command)
+	return exec.CommandContext(ctx, "sh", "-c", command)
 }

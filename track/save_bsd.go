@@ -12,12 +12,17 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with autosr.  If not, see <https://www.gnu.org/licenses/>.
+// +build freebsd openbsd netbsd
 
 package track
 
 import (
+	"context"
+	"log"
 	"os/exec"
 )
 
-func setArgs(cmd *exec.Cmd) {
+func runCmd(ctx context.Context, command string) *exec.Cmd {
+	log.Printf("track.runDownloader: run sh -c %q\n", command)
+	return exec.CommandContext(ctx, "sh", "-c", command)
 }

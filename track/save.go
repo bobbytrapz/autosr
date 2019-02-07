@@ -16,6 +16,7 @@
 package track
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
@@ -24,6 +25,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"sync"
+	"text/template"
 	"time"
 
 	"github.com/bobbytrapz/autosr/options"
@@ -196,8 +198,14 @@ func performSave(ctx context.Context, t *tracked, streamURL string) error {
 	}
 }
 
+type downloaderArgs struct {
+	UserAgent string
+	SavePath  string
+	StreamURL string
+}
+
 // runs the user's downloader
-func runDownloader(ctx context.Context, url, name string) (cmd *exec.Cmd, err error) {
+func runDownloader(ctx context.Context, streamURL, name string) (cmd *exec.Cmd, err error) {
 	saveTo := filepath.Join(options.Get("save_to"), name)
 	ua := fmt.Sprintf("User-Agent=%s", options.Get("user_agent"))
 
@@ -210,24 +218,25 @@ func runDownloader(ctx context.Context, url, name string) (cmd *exec.Cmd, err er
 		}
 		saveAs = fmt.Sprintf("%s %d", fn, n)
 	}
-	saveAs = saveAs + ".ts"
+	saveAs = filepath.Join(saveTo, saveAs+".ts")
 
-	app := options.Get("download_with")
-	args := []string{
-		"--http-header", ua,
-		"-o", saveAs,
-		fmt.Sprintf("hlsvariant://%s", url),
-		"best",
+	var buf bytes.Buffer
+	downloader := options.Get("download_with")
+	t := template.Must(template.New("").Parse(downloader))
+	args := downloaderArgs{
+		UserAgent: ua,
+		SavePath:  saveAs,
+		StreamURL: streamURL,
 	}
+	t.Execute(&buf, args)
 
-	cmd = exec.CommandContext(ctx, app, args...)
+	cmd = runCmd(ctx, buf.String())
+
 	err = os.MkdirAll(saveTo, os.ModePerm)
 	if err != nil {
 		err = fmt.Errorf("track.RunDownloader: %s", err)
 		return
 	}
-	cmd.Dir = saveTo
-	setArgs(cmd)
 
 	return cmd, nil
 }

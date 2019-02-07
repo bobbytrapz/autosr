@@ -21,6 +21,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"runtime"
+	"strings"
 	"sync"
 	"time"
 
@@ -56,7 +57,7 @@ const (
 	configPathWindows       = `~\AppData\Roaming\autosr\`
 	configPathUnix          = "~/.config/autosr/"
 	defaultUserAgent        = `Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/71.0.3578.98 Safari/537.36`
-	defaultStreamDownloader = "streamlink"
+	defaultStreamDownloader = `streamlink --http-header User-Agent="{{.UserAgent}}" -o "{{.SavePath}}" {{.StreamURL}} best`
 	defaultListenAddr       = ":4846"
 	defaultPollRate         = 120 * time.Second
 	defaultSelectFGColor    = "black"
@@ -135,7 +136,10 @@ func AreValid() (ok bool, err error) {
 		return
 	}
 
-	_, err = exec.LookPath(v.GetString("download_with"))
+	downloader := v.GetString("download_with")
+	sp := strings.Split(downloader, " ")
+	app := sp[0]
+	_, err = exec.LookPath(app)
 	if err != nil {
 		err = fmt.Errorf("error: could not find downloader: %s", err)
 		return

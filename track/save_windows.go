@@ -16,8 +16,12 @@
 package track
 
 import (
+	"context"
+	"log"
 	"os/exec"
 )
 
-func setArgs(cmd *exec.Cmd) {
+func runCmd(ctx context.Context, command string) *exec.Cmd {
+	log.Printf("track.runDownloader: run cmd /c %q\n", command)
+	return exec.CommandContext(ctx, "cmd", "/c", command)
 }
