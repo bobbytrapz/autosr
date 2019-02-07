@@ -133,10 +133,9 @@ func (m Module) CheckUpcoming(ctx context.Context) error {
 			defer timeout.Stop()
 
 			// check target's actual room for stream url or upcoming date
-			var streamURL string
 			var err error
-			if streamURL, err = t.CheckStream(ctx); err == nil {
-				log.Println("showroom.CheckUpcoming:", t.name, "is live now!", streamURL)
+			if _, err = t.CheckStream(ctx); err == nil {
+				log.Println("showroom.CheckUpcoming:", t.name, "is live now!")
 				// they are live now so snipe them now
 				if err = track.SnipeTargetAt(ctx, t, time.Now()); err != nil {
 					log.Println("showroom.CheckUpcoming:", err)
@@ -156,7 +155,7 @@ func (m Module) CheckUpcoming(ctx context.Context) error {
 				case <-time.After(backoff.DefaultPolicy.Duration(numAttempts)):
 					numAttempts++
 					// check for room again
-					streamURL, err = e.Retry()
+					_, err = e.Retry()
 					if err == nil {
 						if err = track.SnipeTargetAt(ctx, t, time.Now()); err != nil {
 							log.Println("showroom.CheckUpcoming:", err)
