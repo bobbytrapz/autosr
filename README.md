@@ -188,6 +188,12 @@ autosr
 
 You should see the autosr dashboard.
 
+On Windows and OS X you may see a warning popup about your firewall.
+
+You can just accept the default options and allow access.
+
+autosr needs network access to work.
+
 The dashboard shows you how long someone has been streaming and how long until streams start.
 
 To exit press 'q'.
