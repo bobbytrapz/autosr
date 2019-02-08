@@ -78,7 +78,7 @@ var rootCmd = &cobra.Command{
 	Short: "autosr: Automated Scheduled Recordings",
 	Long: `autosr: Automated Scheduled Recordings
 autosr tracks users and records their livestreams when they start.
-autosr was written by Bobby (@pibisubukebe) so that he never misses 齊藤京子.
+autosr was written by Bobby (@pibisubukebe) so that he never misses Saito Kyoko.
 
 If you have a comment or suggestion please contact @pibisubukebe on Twitter.
 For help or to report a bug visit https://github.com/bobbytrapz/autosr.
