@@ -133,9 +133,6 @@ When you change this file the tracked targets are updated right away.
 				return
 			}
 			appArgs = []string{app, "-e", fn}
-		case "windows":
-			app = "start"
-			appArgs = []string{app, "Notepad", fn}
 		default:
 			// assume unix system
 			editor := os.Getenv("EDITOR")
@@ -164,7 +161,14 @@ When you change this file the tracked targets are updated right away.
 			return
 		}
 
-		err = syscall.Exec(app, appArgs, os.Environ())
+		if runtime.GOOS == "windows" {
+			cmd := exec.Command("cmd.exe", "/C", "start", "/b", "Notepad", fn)
+			if err = cmd.Start(); err == nil {
+				return
+			}
+		} else {
+			err = syscall.Exec(app, appArgs, os.Environ())
+		}
 
 		fmt.Printf("error: running '%s' (%v): %s\n", app, appArgs, err)
 		return

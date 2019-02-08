@@ -51,9 +51,6 @@ var optionsCmd = &cobra.Command{
 				return
 			}
 			appArgs = []string{app, "-e", fn}
-		case "windows":
-			app = "start"
-			appArgs = []string{app, "Notepad", fn}
 		default:
 			// assume unix system
 			app, err = exec.LookPath(optionsEditor)
@@ -76,7 +73,14 @@ var optionsCmd = &cobra.Command{
 		}
 		f.Close()
 
-		err = syscall.Exec(app, appArgs, os.Environ())
+		if runtime.GOOS == "windows" {
+			cmd := exec.Command("cmd.exe", "/C", "start", "/b", "Notepad", fn)
+			if err = cmd.Start(); err == nil {
+				return
+			}
+		} else {
+			err = syscall.Exec(app, appArgs, os.Environ())
+		}
 
 		fmt.Println("error:", err)
 		return
