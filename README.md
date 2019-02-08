@@ -36,8 +36,15 @@ sudo mv autosr-osx /usr/local/bin/autosr
 
 ## Installing on Windows
 
-You can download the binary from the [release page](https://github.com/bobbytrapz/autosr/releases/tag/v1.0.0-beta).
-Further instructions will be provided soon.
+Quick overview:
+
+```
+Set-ExecutionPolicy RemoteSigned -scope CurrentUser
+iex (new-object net.webclient).downloadstring('https://get.scoop.sh')
+scoop bucket add extras
+scoop bucket add bobbytrapz https://github.com/bobbytrapz/scoop-bucket
+scoop install streamlink autosr
+```
 
 ## Track streamers
 
@@ -101,6 +108,12 @@ To see help or dashboard controls:
 ```
 autosr help
 ```
+
+## Known Limitations
+
+On Windows, streamlink will continue to finish downloading a stream even after you run 'autosr stop'.
+
+You will have to stop streamlink processes using the task manager.
 
 ## Bugs
 
