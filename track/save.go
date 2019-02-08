@@ -174,23 +174,17 @@ func performSave(ctx context.Context, t *tracked, streamURL string) error {
 			log.Printf("track.save: %s canceled [%s %d] (%s)", name, app, pid, err)
 			return nil
 		case err := <-exit:
+			// something may have gone wrong so try to recover
+			log.Printf("track.save: %s exited [%s %d]", name, app, pid)
+			d, newURL, err := maybeRecover(ctx, t)
 			if err != nil {
-				// something may have gone wrong so try to recover
-				log.Printf("track.save: %s exited [%s %d]", name, app, pid)
-				d, newURL, err := maybeRecover(ctx, t)
-				if err != nil {
-					// we did not recover so end this save
-					t.SetFinishedAt(time.Now().Add(-d))
-					return nil
-				}
-				log.Printf("track.save: %s recovered (%s)", name, d.Truncate(time.Millisecond))
-				// run a new save command
-				runSave(newURL)
-			} else {
-				log.Printf("track.save: %s exit ok [%s %d]", name, app, pid)
-				t.SetFinishedAt(time.Now())
+				// we did not recover so end this save
+				t.SetFinishedAt(time.Now().Add(-d))
 				return nil
 			}
+			log.Printf("track.save: %s recovered (%s)", name, d.Truncate(time.Millisecond))
+			// run a new save command
+			runSave(newURL)
 		}
 	}
 }
