@@ -29,6 +29,7 @@ import (
 
 var errNoChildProcesses = "waitid: no child processes"
 var errNoChildProcessesOSX = "wait: no child processes"
+var errNoChildProcessesWindows10 = "OpenProcess: The parameter is incorrect."
 
 func readPidAndKill() error {
 	pidPath := filepath.Join(options.ConfigPath, pidFileName)
@@ -56,7 +57,7 @@ func readPidAndKill() error {
 	fmt.Printf("autosr (%d)\n", pid)
 	proc.Kill()
 	_, err = proc.Wait()
-	if err == nil || err.Error() == errNoChildProcesses || err.Error() == errNoChildProcessesOSX {
+	if err == nil || err.Error() == errNoChildProcesses || err.Error() == errNoChildProcessesOSX || err.Error() == errNoChildProcessesWindows10 {
 		return nil
 	}
 	return err
