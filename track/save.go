@@ -298,7 +298,7 @@ func maybeRecover(ctx context.Context, t *tracked) (duration time.Duration, stre
 	}()
 
 	name := t.Name()
-	log.Println("track.maybeRecover:", name, "begin")
+	log.Println("track.maybeRecover:", name, "recovering")
 
 	err = waitForLive(ctx, t, recoverTimeout)
 	if err != nil {
