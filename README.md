@@ -101,8 +101,11 @@ To see help or dashboard controls:
 ```
 autosr help
 ```
+
+## Bugs
+
+Please report bugs on Github or contact me @pibisubukebe on Twitter.
+
 ## License
 
 This software is released under the GPL v3 license. See LICENSE.
-
-
