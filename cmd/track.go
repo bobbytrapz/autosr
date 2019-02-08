@@ -133,6 +133,7 @@ When you change this file the tracked targets are updated right away.
 				return
 			}
 			appArgs = []string{app, "-e", fn}
+		case "windows":
 		default:
 			// assume unix system
 			editor := os.Getenv("EDITOR")

@@ -51,6 +51,7 @@ var optionsCmd = &cobra.Command{
 				return
 			}
 			appArgs = []string{app, "-e", fn}
+		case "windows":
 		default:
 			// assume unix system
 			app, err = exec.LookPath(optionsEditor)
