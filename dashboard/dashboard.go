@@ -360,6 +360,9 @@ func selected(v *gocui.View) (row track.DisplayRow) {
 
 func openTarget(g *gocui.Gui, v *gocui.View) error {
 	row := selected(v)
+	if row.Link == "" {
+		return nil
+	}
 	go openLink(row.Link)
 	return nil
 }
