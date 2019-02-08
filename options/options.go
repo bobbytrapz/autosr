@@ -60,7 +60,7 @@ const (
 	defaultStreamDownloader = `streamlink --http-header User-Agent={{UserAgent}} -o {{SavePath}} {{StreamURL}} best`
 	defaultListenAddr       = ":4846"
 	defaultPollRate         = 120 * time.Second
-	defaultSelectFGColor    = "yellow"
+	defaultSelectFGColor    = "blue"
 	defaultSelectBGColor    = "white"
 )
 
