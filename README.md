@@ -90,7 +90,7 @@ Neither powershell nor powershell_ise will display our interface properly.
 
 You can choose any other console emulator you like.
 
-autosr will still record no matter where you run it. The dashboard just will not function correctly.
+autosr will still record no matter where you run it.
 
 ## Why install streamlink?
 
@@ -118,7 +118,7 @@ Install streamlink:
 sudo pip install streamlink
 ```
 
-Update autosr:
+When a new version is released and you want to update:
 
 ```
 sudo autosr update
@@ -141,7 +141,7 @@ Install streamlink:
 sudo pip install streamlink
 ```
 
-Update autosr:
+When a new version is released and you want to update:
 
 ```
 sudo autosr update
@@ -176,7 +176,9 @@ https://www.showroom-live.com/OTHER_ROOM
 
 Blank lines and lines that start with '#' are ignored.
 
-To stop tracking someone just remove them from the list or add a '#' to comment them out. There is no need to restart. autosr will stop tracking them immediately.
+To stop tracking someone just remove them from the list or add a '#' to comment them out. Then save the file.
+
+There is no need to restart. autosr will stop tracking them immediately.
 
 ## Start recording
 
@@ -216,6 +218,8 @@ The files will be in ts format.
 
 You can encode them however you like or just watch them as is.
 
+Video quality will depend on the connection quality between you and the streamer.
+
 For playing media I recommend [mpv](https://mpv.io)
 
 ## Customize options
@@ -246,11 +250,11 @@ autosr help
 
 autosr makes modest use of memory even including multiple instances of streamlink.
 
-Resource use depends on how often the people you track record at the same time.
+Memory use grows as more people are recorded at the same time.
 
 For what it's worth, I track around 100 people without problems.
 
-Streams that last around an hour use about 1GB of space each.
+Streams that last around an hour take about 1GB of space each.
 
 ## Bugs
 
