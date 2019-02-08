@@ -52,12 +52,8 @@ var optionsCmd = &cobra.Command{
 			}
 			appArgs = []string{app, "-e", fn}
 		case "windows":
-			sys := os.Getenv("SYSTEM32")
-			if sys != "" {
-				sys = `C:\WINDOWS\System32`
-			}
-			app = filepath.Join(sys, `Notepad.exe`)
-			appArgs = []string{app, "/W", fn}
+			app = "start"
+			appArgs = []string{app, "Notepad", fn}
 		default:
 			// assume unix system
 			app, err = exec.LookPath(optionsEditor)

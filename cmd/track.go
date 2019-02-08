@@ -134,12 +134,8 @@ When you change this file the tracked targets are updated right away.
 			}
 			appArgs = []string{app, "-e", fn}
 		case "windows":
-			sys := os.Getenv("SYSTEM32")
-			if sys != "" {
-				sys = `C:\WINDOWS\System32`
-			}
-			app = filepath.Join(sys, `Notepad.exe`)
-			appArgs = []string{app, "/W", fn}
+			app = "start"
+			appArgs = []string{app, "Notepad", fn}
 		default:
 			// assume unix system
 			editor := os.Getenv("EDITOR")
