@@ -258,6 +258,10 @@ For what it's worth, I track around 100 people without problems.
 
 Streams that last around an hour take about 1GB of space each.
 
+The bandwidth usage can be very high depending on how many people you track.
+
+If you have a data cap, you probably should not be running autosr. If you run it anyway I would suggest stopping it when you do not need it.
+
 ## Known Issues
 
 On Windows, it seems streamlink is sometimes not closed properly when tracking is canceled.
