@@ -124,7 +124,7 @@ When a new version is released and you want to update:
 sudo autosr update
 ```
 
-## Installing on Linux
+# Installing on Linux
 
 Download [autosr](https://github.com/bobbytrapz/autosr/releases/latest)
 
@@ -255,6 +255,10 @@ Memory use grows as more people are recorded at the same time.
 For what it's worth, I track around 100 people without problems.
 
 Streams that last around an hour take about 1GB of space each.
+
+## Known Issues
+
+On Windows, it seems streamlink is sometimes not closed properly when tracking is canceled.
 
 ## Bugs
 
