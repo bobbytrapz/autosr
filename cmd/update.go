@@ -28,6 +28,7 @@ import (
 	"runtime"
 
 	"github.com/bobbytrapz/autosr/options"
+	"github.com/bobbytrapz/autosr/version"
 	"github.com/spf13/cobra"
 )
 
@@ -117,6 +118,10 @@ var updateCmd = &cobra.Command{
 		err = json.Unmarshal(buf.Bytes(), &data)
 		if err != nil {
 			fail()
+		}
+		if data.Name == version.String {
+			fmt.Println("We already have the latest version:", data.Name)
+			return
 		}
 
 		var dl string
