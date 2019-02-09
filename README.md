@@ -2,6 +2,8 @@
 
 ![Imgur](https://i.imgur.com/mtiFUZ1.png?1)
 
+autosr is like DVR for live streams.
+
 autosr tracks streamers you are interested in and records them when they become live.
 
 autosr is a command-line application.
@@ -40,7 +42,7 @@ scoop uninstall autosr
 scoop install autosr
 ```
 
-Update autosr:
+When a new version is released and you want to update:
 
 ```
 scoop update autosr
@@ -259,6 +261,10 @@ Streams that last around an hour take about 1GB of space each.
 ## Known Issues
 
 On Windows, it seems streamlink is sometimes not closed properly when tracking is canceled.
+
+## Alternatives
+
+I first wrote this for myself a year ago and so I am not aware of any alternative solutions. If you know any please let me know.
 
 ## Bugs
 
