@@ -260,7 +260,7 @@ Streams that last around an hour take about 1GB of space each.
 
 The bandwidth usage can be very high depending on how many people you track.
 
-If you have a data cap, you probably should not be running autosr. If you run it anyway I would suggest stopping it when you do not need it.
+If you have a data cap, you probably should not be running autosr. A safer solution would be to just run [streamlink](https://streamlink.github.io/) manually whenever you need to.
 
 ## Known Issues
 
