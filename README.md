@@ -128,12 +128,6 @@ Install streamlink:
 easy_install -U streamlink
 ```
 
-You can also use [Homebrew](https://brew.sh/) to install streamlink:
-
-```
-brew install streamlink
-```
-
 When a new version is released and you want to update:
 
 ```
