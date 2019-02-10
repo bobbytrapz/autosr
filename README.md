@@ -84,7 +84,7 @@ scoop bucket add bobbytrapz https://github.com/bobbytrapz/scoop-bucket
 scoop install cmder streamlink autosr
 ```
 
-[How to use](#how-to-use)
+Open cmder and [start using autosr](#how-to-use)
 
 ## Why install scoop?
 
