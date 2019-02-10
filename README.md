@@ -2,6 +2,12 @@
 
 ![Imgur](https://i.imgur.com/mtiFUZ1.png?1)
 
+[Installing on Windows 10](#installing-on-windows-10)
+
+[Installing on Mac OS X](#installing-on-mac-os-x)
+
+[Installing on Linux](#installing-on-linux)
+
 autosr is like DVR for live streams.
 
 autosr tracks streamers you are interested in and records them when they become live.
@@ -101,7 +107,7 @@ You can use any stream downloader you'd like as long as you change the options.
 
 Use 'autosr options' to make changes.
 
-# Installing on OS X
+# Installing on Mac OS X
 
 Save [autosr-osx](https://github.com/bobbytrapz/autosr/releases/latest) to your home directory.
 
