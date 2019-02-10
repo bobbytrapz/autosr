@@ -1,6 +1,6 @@
 # autosr: Automated Scheduled Recordings
 
-![Imgur](https://i.imgur.com/ijyOzpq.png?1)
+![Imgur](https://i.imgur.com/umULMjL.png)
 
 [Installing on Windows 10](#installing-on-windows-10)
 
