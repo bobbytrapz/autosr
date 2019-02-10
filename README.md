@@ -84,6 +84,8 @@ scoop bucket add bobbytrapz https://github.com/bobbytrapz/scoop-bucket
 scoop install cmder streamlink autosr
 ```
 
+[How to use](#how-to-use)
+
 ## Why install scoop?
 
 It is not easy to install command-line applications on Windows. [scoop](https://scoop.sh/) makes installing them simple.
@@ -137,6 +139,8 @@ When a new version is released and you want to update:
 ```
 sudo autosr update
 ```
+
+[How to use](#how-to-use)
 
 # Installing on Linux
 
