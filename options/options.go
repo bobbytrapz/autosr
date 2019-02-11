@@ -25,7 +25,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/bobbytrapz/autosr/homedir"
+	"github.com/bobbytrapz/homedir"
 	"github.com/fsnotify/fsnotify"
 	"github.com/spf13/viper"
 )
