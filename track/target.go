@@ -28,11 +28,6 @@ type Target interface {
 	// url string
 	Link() string
 
-	// each module target information is different.
-	// this give the target an oppourtunity to refresh display information.
-	// the module decides if/when to call it
-	UpdateInfo(context.Context) error
-
 	// save path
 	SavePath() string
 
