@@ -35,20 +35,39 @@ type target struct {
 	urlKey  string
 }
 
+func (t *target) updateInfo(ctx context.Context) error {
+	info, err := fetchTargetInformation(ctx, t.link)
+	if err != nil {
+		return fmt.Errorf("showroom.UpdateInfo: %s", err)
+	}
+	*t = info
+	return nil
+}
+
 // BeginSnipe callback
-func (t target) BeginSnipe() {
+func (t target) BeginSnipe(ctx context.Context) {
 	log.Println("showroom.BeginSnipe:", t.name)
+	// ignore an error
+	// we don't want to delay just because we could not update
+	if err := t.updateInfo(ctx); err != nil {
+		log.Println("showroom.CheckUpcoming:", err)
+	}
 	return
 }
 
 // BeginSave callback
-func (t target) BeginSave() {
+func (t target) BeginSave(ctx context.Context) {
 	log.Println("showroom.BeginSave:", t.name)
+	// ignore an error
+	// we don't want to delay just because we could not update
+	if err := t.updateInfo(ctx); err != nil {
+		log.Println("showroom.CheckUpcoming:", err)
+	}
 	return
 }
 
 // EndSave callback
-func (t target) EndSave() {
+func (t target) EndSave(ctx context.Context) {
 	log.Println("showroom.EndSave:", t.name)
 	return
 }

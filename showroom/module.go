@@ -48,16 +48,10 @@ func (m Module) Hostname() string {
 	return "www.showroom-live.com"
 }
 
-// AddTarget to track
-func (m Module) AddTarget(ctx context.Context, link string) (track.Target, error) {
-	_, err := url.Parse(link)
-	if err != nil {
-		return nil, fmt.Errorf("showroom.AddTarget: '%s' %s", link, err)
-	}
-
+func fetchTargetInformation(ctx context.Context, link string) (target, error) {
 	s, err := fetchRoom(ctx, link)
 	if err != nil {
-		return nil, fmt.Errorf("showroom.AddTarget: '%s' %s", link, err)
+		return target{}, fmt.Errorf("showroom.fetchTargetInformation: '%s' %s", link, err)
 	}
 
 	name := strings.TrimSpace(s.Name)
@@ -71,12 +65,25 @@ func (m Module) AddTarget(ctx context.Context, link string) (track.Target, error
 	}
 	display := buf.String()
 
-	added := target{
+	return target{
 		name:    name,
 		display: display,
 		id:      s.ID,
 		link:    link,
 		urlKey:  s.LiveRoom.URLKey,
+	}, nil
+}
+
+// AddTarget to track
+func (m Module) AddTarget(ctx context.Context, link string) (track.Target, error) {
+	_, err := url.Parse(link)
+	if err != nil {
+		return nil, fmt.Errorf("showroom.AddTarget: '%s' %s", link, err)
+	}
+
+	added, err := fetchTargetInformation(ctx, link)
+	if err != nil {
+		return nil, fmt.Errorf("showroom.AddTarget: '%s' %s", link, err)
 	}
 
 	return added, nil
