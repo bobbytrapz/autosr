@@ -28,17 +28,17 @@ type dummy struct {
 }
 
 // BeginSnipe callback
-func (t dummy) BeginSnipe() {
+func (t dummy) BeginSnipe(ctx context.Context) {
 	return
 }
 
 // BeginSave callback
-func (t dummy) BeginSave() {
+func (t dummy) BeginSave(ctx context.Context) {
 	return
 }
 
 // EndSave callback
-func (t dummy) EndSave() {
+func (t dummy) EndSave(ctx context.Context) {
 	return
 }
 
