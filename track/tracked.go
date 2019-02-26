@@ -68,34 +68,34 @@ func (t *tracked) Hostname() string {
 	return t.hostname
 }
 
-func (t *tracked) BeginSnipe() {
+func (t *tracked) BeginSnipe(ctx context.Context) {
 	t.RLock()
 	defer t.RUnlock()
 	if t.target == nil {
 		return
 	}
 
-	t.target.BeginSnipe()
+	t.target.BeginSnipe(ctx)
 }
 
-func (t *tracked) BeginSave() {
+func (t *tracked) BeginSave(ctx context.Context) {
 	t.RLock()
 	defer t.RUnlock()
 	if t.target == nil {
 		return
 	}
 
-	t.target.BeginSave()
+	t.target.BeginSave(ctx)
 }
 
-func (t *tracked) EndSave() {
+func (t *tracked) EndSave(ctx context.Context) {
 	t.RLock()
 	defer t.RUnlock()
 	if t.target == nil {
 		return
 	}
 
-	t.target.EndSave()
+	t.target.EndSave(ctx)
 }
 
 func (t *tracked) CheckLive(ctx context.Context) (bool, error) {

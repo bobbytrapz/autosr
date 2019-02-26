@@ -28,6 +28,11 @@ type Target interface {
 	// url string
 	Link() string
 
+	// each module target information is different.
+	// this give the target an oppourtunity to refresh display information.
+	// the module decides if/when to call it
+	UpdateInfo(context.Context) error
+
 	// save path
 	SavePath() string
 
@@ -37,9 +42,9 @@ type Target interface {
 	CheckStream(context.Context) (string, error)
 
 	// callback when sniping starts
-	BeginSnipe()
+	BeginSnipe(context.Context)
 	// callback when save starts
-	BeginSave()
+	BeginSave(context.Context)
 	// callback when save ends
-	EndSave()
+	EndSave(context.Context)
 }

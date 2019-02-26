@@ -129,7 +129,7 @@ func performSnipe(ctx context.Context, t *tracked, upcomingAt time.Time) (err er
 	defer func() {
 		delSnipeTask(task)
 	}()
-	t.BeginSnipe()
+	t.BeginSnipe(ctx)
 	log.Println("track.snipe:", task.name)
 
 	// wait until we expect the target to stream

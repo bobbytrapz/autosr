@@ -115,9 +115,9 @@ func performSave(ctx context.Context, t *tracked, streamURL string) error {
 	}
 	defer func() {
 		delSaveTask(task)
-		t.EndSave()
+		t.EndSave(ctx)
 	}()
-	t.BeginSave()
+	t.BeginSave(ctx)
 	log.Println("track.save:", task.name)
 
 	// used by command monitor to indicate that the command has exited
