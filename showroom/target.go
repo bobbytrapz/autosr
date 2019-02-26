@@ -50,7 +50,7 @@ func (t target) BeginSnipe(ctx context.Context) {
 	// ignore an error
 	// we don't want to delay just because we could not update
 	if err := t.updateInfo(ctx); err != nil {
-		log.Println("showroom.CheckUpcoming:", err)
+		log.Println("showroom.BeginSnipe:", err)
 	}
 	return
 }
