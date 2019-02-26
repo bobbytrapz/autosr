@@ -58,11 +58,6 @@ func (t target) BeginSnipe(ctx context.Context) {
 // BeginSave callback
 func (t target) BeginSave(ctx context.Context) {
 	log.Println("showroom.BeginSave:", t.name)
-	// ignore an error
-	// we don't want to delay just because we could not update
-	if err := t.updateInfo(ctx); err != nil {
-		log.Println("showroom.CheckUpcoming:", err)
-	}
 	return
 }
 
