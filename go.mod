@@ -1,7 +1,6 @@
 module github.com/bobbytrapz/autosr
 
 require (
-	github.com/bobbytrapz/homedir v0.0.0-20190211121908-25d60d82e610
 	github.com/coreos/etcd v3.3.11+incompatible // indirect
 	github.com/fsnotify/fsnotify v1.4.7
 	github.com/gorilla/websocket v1.4.0
