@@ -50,7 +50,8 @@ func poll(ctx context.Context, module Module) error {
 	hostname := module.Hostname()
 
 	// helps make the logic below easier to follow
-	attempt := func() {
+	// didForce is true if the user requested this attempt
+	attempt := func(didForce bool) {
 		// gather targets
 		var targets []Target
 		for _, t := range tracking {
@@ -61,6 +62,11 @@ func poll(ctx context.Context, module Module) error {
 					continue
 				}
 				targets = append(targets, t.target)
+				if didForce {
+					go func(tup Target) {
+						tup.Reload(ctx)
+					}(t.target)
+				}
 			}
 		}
 		err := module.CheckUpcoming(ctx, targets)
@@ -87,7 +93,7 @@ func poll(ctx context.Context, module Module) error {
 
 	// make first attempt right away
 	log.Println("track.poll:", hostname, "first attempt...")
-	attempt()
+	attempt(false)
 
 	// poll
 	go func() {
@@ -103,7 +109,7 @@ func poll(ctx context.Context, module Module) error {
 				log.Println("track.poll:", hostname, ctx.Err())
 				return
 			case <-tick.C:
-				attempt()
+				attempt(false)
 				// check if poll rate was adjusted
 				p := options.GetDuration("check_every")
 				if p != pollRate {
@@ -113,7 +119,7 @@ func poll(ctx context.Context, module Module) error {
 					log.Println("track.poll:", hostname, "new poll rate", pollRate)
 				}
 			case <-check:
-				attempt()
+				attempt(true)
 				// check if poll rate was adjusted
 				p := options.GetDuration("check_every")
 				if p != pollRate {

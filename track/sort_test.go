@@ -42,6 +42,11 @@ func (t dummy) EndSave(ctx context.Context) {
 	return
 }
 
+// Reload callback
+func (t dummy) Reload(ctx context.Context) {
+	return
+}
+
 // Display for display in dashboard
 func (t dummy) Display() string {
 	return t.name

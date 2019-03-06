@@ -42,4 +42,6 @@ type Target interface {
 	BeginSave(context.Context)
 	// callback when save ends
 	EndSave(context.Context)
+	// callback when user requests reload
+	Reload(context.Context)
 }

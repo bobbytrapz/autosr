@@ -44,6 +44,13 @@ func (t *target) updateInfo(ctx context.Context) error {
 	return nil
 }
 
+// Reload callback
+func (t target) Reload(ctx context.Context) {
+	if err := t.updateInfo(ctx); err != nil {
+		log.Println("showroom.Reload:", err)
+	}
+}
+
 // BeginSnipe callback
 func (t target) BeginSnipe(ctx context.Context) {
 	log.Println("showroom.BeginSnipe:", t.name)
