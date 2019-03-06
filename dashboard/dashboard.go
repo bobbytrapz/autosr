@@ -220,7 +220,7 @@ func keys(g *gocui.Gui) (err error) {
 		return
 	}
 
-	if err = g.SetKeybinding("target-list", 'o', gocui.ModNone, openTarget); err != nil {
+	if err = g.SetKeybinding("target-list", 'c', gocui.ModNone, reloadTargets); err != nil {
 		return
 	}
 
