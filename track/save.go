@@ -113,12 +113,14 @@ func performSave(ctx context.Context, t *tracked, streamURL string) error {
 		log.Println("track.save: already saving", task.name)
 		return nil
 	}
+	var saved []string
 	defer func() {
 		delSaveTask(task)
 		t.EndSave(ctx)
 		runHooks("end-save", map[string]interface{}{
-			"Name": task.name,
-			"Link": task.link,
+			"Name":  task.name,
+			"Link":  task.link,
+			"Saved": saved,
 		})
 	}()
 	t.BeginSave(ctx)
@@ -140,6 +142,7 @@ func performSave(ctx context.Context, t *tracked, streamURL string) error {
 		if err != nil {
 			return fmt.Errorf("track.save: %s", err)
 		}
+		saved = append(saved, saveAs)
 
 		if err := cmd.Start(); err != nil {
 			return fmt.Errorf("track.save: %s", err)
