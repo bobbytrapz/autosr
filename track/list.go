@@ -34,7 +34,7 @@ var listPath = filepath.Join(options.ConfigPath, "track.list")
 func readList(ctx context.Context) error {
 	log.Println("track.readList: reading...")
 
-	f, err := os.Open(listPath)
+	f, err := os.OpenFile(listPath, os.O_CREATE|os.O_RDONLY, 0600)
 	if err != nil {
 		return fmt.Errorf("track.readList: %s", err)
 	}
