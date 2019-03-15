@@ -69,6 +69,9 @@ func poll(ctx context.Context, module Module) error {
 				}
 			}
 		}
+		if didForce {
+			runHooks("reload", nil)
+		}
 		err := module.CheckUpcoming(ctx, targets)
 		if err != nil {
 			// retry if possible

@@ -130,6 +130,11 @@ func performSnipe(ctx context.Context, t *tracked, upcomingAt time.Time) (err er
 		delSnipeTask(task)
 	}()
 	t.BeginSnipe(ctx)
+	runHooks("begin-snipe", map[string]interface{}{
+		"Name": task.name,
+		"Link": task.link,
+		"At":   task.at,
+	})
 	log.Println("track.snipe:", task.name)
 
 	// wait until we expect the target to stream

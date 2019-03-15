@@ -17,14 +17,19 @@ package track
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"net/url"
 	"os"
+	"os/exec"
+	"path/filepath"
 	"sync"
 	"time"
 
+	"github.com/bobbytrapz/autosr/options"
 	"github.com/fsnotify/fsnotify"
 )
 
@@ -206,4 +211,39 @@ func CancelTarget(link string) error {
 	t.Cancel()
 
 	return nil
+}
+
+// data is a json string
+func runHooks(name string, data map[string]interface{}) {
+	log.Println("track.runHooks:", name, data)
+
+	hooksDir := filepath.Join(options.ConfigPath, "hooks", name)
+	files, err := ioutil.ReadDir(hooksDir)
+	if err != nil {
+		log.Println("track.runHooks:", err)
+		return
+	}
+
+	m, err := json.Marshal(data)
+	if err != nil {
+		log.Println("track.runHooks:", err)
+		return
+	}
+	arg := string(m)
+
+	for _, f := range files {
+		if f.Mode()&0111 != 0 {
+			log.Println("track.runHooks: execute", f.Name())
+			cmdpath := filepath.Join(hooksDir, f.Name())
+			cmd := exec.Command(cmdpath, arg)
+			cmd.Dir = hooksDir
+			err := cmd.Start()
+			if err != nil {
+				log.Println("track.runHooks:", err)
+				continue
+			}
+		}
+	}
+
+	return
 }

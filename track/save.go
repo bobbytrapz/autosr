@@ -116,6 +116,10 @@ func performSave(ctx context.Context, t *tracked, streamURL string) error {
 	defer func() {
 		delSaveTask(task)
 		t.EndSave(ctx)
+		runHooks("end-save", map[string]interface{}{
+			"Name": task.name,
+			"Link": task.link,
+		})
 	}()
 	t.BeginSave(ctx)
 	log.Println("track.save:", task.name)
@@ -127,11 +131,12 @@ func performSave(ctx context.Context, t *tracked, streamURL string) error {
 	var cmd *exec.Cmd
 	var app string
 	var pid int
+	var saveAs string
 
 	// will be called again if we manage to recover a stream
 	runSave := func(url string) error {
 		var err error
-		cmd, err = runDownloader(ctx, url, name)
+		cmd, saveAs, err = runDownloader(ctx, url, name)
 		if err != nil {
 			return fmt.Errorf("track.save: %s", err)
 		}
@@ -142,6 +147,11 @@ func performSave(ctx context.Context, t *tracked, streamURL string) error {
 		app = cmd.Args[0]
 		pid = cmd.Process.Pid
 		log.Printf("track.save: %s [%s %d]", name, app, pid)
+		runHooks("begin-save", map[string]interface{}{
+			"Name":   task.name,
+			"Link":   task.link,
+			"SaveAs": saveAs,
+		})
 
 		// monitor downloader
 		go func() {
@@ -229,7 +239,7 @@ func (dargs downloaderArgs) ReplaceIn(command string) (app string, args []string
 }
 
 // runs the user's downloader
-func runDownloader(ctx context.Context, streamURL, name string) (cmd *exec.Cmd, err error) {
+func runDownloader(ctx context.Context, streamURL, name string) (cmd *exec.Cmd, saveAs string, err error) {
 	// keep the path safe
 	r := strings.NewReplacer(
 		// linux
@@ -254,7 +264,7 @@ func runDownloader(ctx context.Context, streamURL, name string) (cmd *exec.Cmd, 
 	ua := options.Get("user_agent")
 
 	fn := fmt.Sprintf("%s-%s", time.Now().Format("2006-01-02"), name)
-	saveAs := fn
+	saveAs = fn
 	for n := 2; ; n++ {
 		p := filepath.Join(saveTo, saveAs+".ts")
 		if _, err := os.Stat(p); os.IsNotExist(err) {
@@ -281,7 +291,7 @@ func runDownloader(ctx context.Context, streamURL, name string) (cmd *exec.Cmd, 
 		return
 	}
 
-	return cmd, nil
+	return cmd, saveAs, nil
 }
 
 func maybeRecover(ctx context.Context, t *tracked) (duration time.Duration, streamURL string, err error) {

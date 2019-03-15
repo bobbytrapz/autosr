@@ -66,6 +66,14 @@ const (
 // ConfigPath is the path where track list and config file are kept
 var ConfigPath string
 
+// EventHooks contains the names of valid event hooks
+var EventHooks = []string{
+	"begin-snipe",
+	"begin-save",
+	"end-save",
+	"reload",
+}
+
 var v = viper.New()
 
 func init() {
@@ -104,6 +112,22 @@ func init() {
 	if err := os.MkdirAll(ConfigPath, 0700); err != nil {
 		fmt.Println("error:", err)
 		return
+	}
+
+	hooksPath := filepath.Join(ConfigPath, "hooks")
+
+	if err := os.MkdirAll(hooksPath, 0700); err != nil {
+		fmt.Println("error:", err)
+		return
+	}
+
+	// make each hook directory
+	for _, event := range EventHooks {
+		p := filepath.Join(hooksPath, event)
+		if err := os.MkdirAll(p, 0700); err != nil {
+			fmt.Println("error:", err)
+			return
+		}
 	}
 
 	v.SetDefault("save_to", savePath)
