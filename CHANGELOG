@@ -1,0 +1,10 @@
+# Changelog
+
+## 1.1.0 - 2019-03
+### New for users
+  Hook scripts
+    {{config}}/autosr/hooks
+    Each event directory under hooks contains executables that will run when that event occurs.
+    For example, having an executable "notify.py" in the "end-save" directory will run notify.py every time autosr completes a save.
+  Changes for showroom module
+    The display name of a target updates when the user changes their title
