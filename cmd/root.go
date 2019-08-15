@@ -91,7 +91,7 @@ Dashboard controls:
 
 This program comes with ABSOLUTELY NO WARRANTY;
 This is free software, and you are welcome to redistribute it under certain conditions.
-Details can be found at https://github.com/bobbytrapz/autosr/LICENSE.
+Details can be found at https://www.gnu.org/licenses/gpl-3.0.en.html.
 `,
 	Run: func(cmd *cobra.Command, args []string) {
 		if ok, err := options.AreValid(); !ok {
