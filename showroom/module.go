@@ -48,10 +48,10 @@ func (m Module) Hostname() string {
 	return "www.showroom-live.com"
 }
 
-func fetchTargetInformation(ctx context.Context, link string) (target, error) {
+func fetchTargetInformation(ctx context.Context, link string) (*target, error) {
 	s, err := fetchRoom(ctx, link)
 	if err != nil {
-		return target{}, fmt.Errorf("showroom.fetchTargetInformation: '%s' %s", link, err)
+		return nil, fmt.Errorf("showroom.fetchTargetInformation: '%s' %s", link, err)
 	}
 
 	name := strings.TrimSpace(s.Name)
@@ -65,7 +65,7 @@ func fetchTargetInformation(ctx context.Context, link string) (target, error) {
 	}
 	display := buf.String()
 
-	return target{
+	return &target{
 		name:    name,
 		display: display,
 		id:      s.ID,

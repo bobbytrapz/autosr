@@ -40,19 +40,19 @@ func (t *target) updateInfo(ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("showroom.UpdateInfo: %s", err)
 	}
-	*t = info
+	*t = *info
 	return nil
 }
 
 // Reload callback
-func (t target) Reload(ctx context.Context) {
+func (t *target) Reload(ctx context.Context) {
 	if err := t.updateInfo(ctx); err != nil {
 		log.Println("showroom.Reload:", err)
 	}
 }
 
 // BeginSnipe callback
-func (t target) BeginSnipe(ctx context.Context) {
+func (t *target) BeginSnipe(ctx context.Context) {
 	log.Println("showroom.BeginSnipe:", t.name)
 	// ignore an error
 	// we don't want to delay just because we could not update
@@ -63,34 +63,34 @@ func (t target) BeginSnipe(ctx context.Context) {
 }
 
 // BeginSave callback
-func (t target) BeginSave(ctx context.Context) {
+func (t *target) BeginSave(ctx context.Context) {
 	log.Println("showroom.BeginSave:", t.name)
 	return
 }
 
 // EndSave callback
-func (t target) EndSave(ctx context.Context) {
+func (t *target) EndSave(ctx context.Context) {
 	log.Println("showroom.EndSave:", t.name)
 	return
 }
 
 // Display for display in dashboard
-func (t target) Display() string {
+func (t *target) Display() string {
 	return t.display
 }
 
 // Name is the streamers real name
-func (t target) Name() string {
+func (t *target) Name() string {
 	return t.name
 }
 
 // Link is url string where this user's streams can be found
-func (t target) Link() string {
+func (t *target) Link() string {
 	return t.link
 }
 
 // CheckLive gives true if the user is online
-func (t target) CheckLive(ctx context.Context) (isLive bool, err error) {
+func (t *target) CheckLive(ctx context.Context) (isLive bool, err error) {
 	// check to see if the user is live
 	isLive, err = checkIsLive(ctx, t.id)
 	if err == nil && !isLive {
@@ -106,7 +106,7 @@ func (t target) CheckLive(ctx context.Context) (isLive bool, err error) {
 }
 
 // CheckStream gives nil if a stream has been found and expects the user to possibly be live
-func (t target) CheckStream(ctx context.Context) (streamURL string, err error) {
+func (t *target) CheckStream(ctx context.Context) (streamURL string, err error) {
 	// check for stream
 	if s, err := checkStreamURL(ctx, t.id); err == nil && s != "" {
 		return s, nil
@@ -138,7 +138,7 @@ func (t target) CheckStream(ctx context.Context) (streamURL string, err error) {
 }
 
 // SavePath decides where videos are saved
-func (t target) SavePath() string {
+func (t *target) SavePath() string {
 	if t.name != "" {
 		return t.name
 	}
