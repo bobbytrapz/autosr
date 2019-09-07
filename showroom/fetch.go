@@ -449,25 +449,3 @@ func findInitialData(doc *html.Node) (status roomStatus, err error) {
 
 	return
 }
-
-func parseUpcomingDate(d string) time.Time {
-	layout := "1/2 15:04 2006"
-	now := time.Now()
-	date := fmt.Sprintf("%s %s", d, now.Format(("2006")))
-
-	at, err := time.Parse(layout, date)
-	if err != nil {
-		// assume now if the date is formatted wrong for whatever reason
-		return now
-	}
-
-	if at.Month() < now.Month() {
-		at = at.AddDate(1, 0, 0)
-	}
-
-	// note: time is in JST but UTC so we do this crap
-	// we should be removing all of this soon
-	at = at.Add(-14*time.Hour + 5*time.Hour).Local()
-
-	return at
-}
