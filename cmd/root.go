@@ -35,7 +35,7 @@ import (
 )
 
 const (
-	pidFileName = ".autosr-pid"
+	pidFileName = "autosr.pid"
 )
 
 const backgroundEnvKey = "autosr_is_now_running_in_the_background"
