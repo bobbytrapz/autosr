@@ -20,10 +20,8 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
-	"path/filepath"
 	"strconv"
 
-	"github.com/bobbytrapz/autosr/options"
 	"github.com/spf13/cobra"
 )
 
@@ -32,7 +30,6 @@ var errNoChildProcessesOSX = "wait: no child processes"
 var errNoChildProcessesWindows10 = "OpenProcess: The parameter is incorrect."
 
 func readPidAndKill() error {
-	pidPath := filepath.Join(options.ConfigPath, pidFileName)
 	data, err := ioutil.ReadFile(pidPath)
 
 	if os.IsNotExist(err) {

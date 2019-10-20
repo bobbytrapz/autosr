@@ -22,7 +22,9 @@ import (
 	"os"
 	"os/exec"
 	"os/signal"
+	"os/user"
 	"path/filepath"
+	"runtime"
 	"time"
 
 	"github.com/bobbytrapz/autosr/dashboard"
@@ -38,11 +40,29 @@ const (
 	pidFileName = "autosr.pid"
 )
 
+var pidPath string
+
+func init() {
+	user, err := user.Current()
+	if err != nil {
+		panic(err)
+	}
+	switch goos := runtime.GOOS; goos {
+	case "linux":
+		runtimeDir, ok := os.LookupEnv("XDG_RUNTIME_DIR")
+		if !ok {
+			runtimeDir = filepath.Join("/run/user", user.Uid)
+		}
+		pidPath = filepath.Join(runtimeDir, pidFileName)
+	default:
+		pidPath = filepath.Join(options.ConfigPath, pidFileName)
+	}
+}
+
 const backgroundEnvKey = "autosr_is_now_running_in_the_background"
 
 func isRunningInBackground() bool {
 	// check pid file
-	pidPath := filepath.Join(options.ConfigPath, pidFileName)
 	_, err := os.Stat(pidPath)
 	return err == nil
 }
@@ -65,7 +85,6 @@ func runSelfInBackground() (*exec.Cmd, error) {
 
 	// write a pid file
 	runinfo := fmt.Sprintf("%d", cmd.Process.Pid)
-	pidPath := filepath.Join(options.ConfigPath, pidFileName)
 	if err := ioutil.WriteFile(pidPath, []byte(runinfo), 0644); err != nil {
 		panic(err)
 	}
