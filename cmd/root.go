@@ -54,6 +54,8 @@ func init() {
 			runtimeDir = filepath.Join("/run/user", user.Uid)
 		}
 		pidPath = filepath.Join(runtimeDir, pidFileName)
+	case "darwin":
+		pidPath = filepath.Join("/tmp", pidFileName)
 	default:
 		pidPath = filepath.Join(options.ConfigPath, pidFileName)
 	}
