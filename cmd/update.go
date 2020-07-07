@@ -27,7 +27,6 @@ import (
 	"path/filepath"
 	"runtime"
 
-	"github.com/bobbytrapz/autosr/options"
 	"github.com/bobbytrapz/autosr/version"
 	"github.com/spf13/cobra"
 )
@@ -154,7 +153,8 @@ var updateCmd = &cobra.Command{
 			fail()
 		}
 
-		backup := filepath.Join(options.ConfigPath, "autosr.backup")
+		exeDir := filepath.Dir(exePath)
+		backup := filepath.Join(exeDir, "autosr.backup")
 		fmt.Println("Backup current version to", backup)
 		err = os.Rename(exePath, backup)
 		if err != nil {
@@ -164,6 +164,7 @@ var updateCmd = &cobra.Command{
 					fmt.Println("You could try 'sudo autosr update'")
 				}
 			}
+			fmt.Println(err)
 			fail()
 		}
 
@@ -176,6 +177,7 @@ var updateCmd = &cobra.Command{
 					fmt.Println("You could try 'sudo autosr update'")
 				}
 			}
+			fmt.Println(err)
 			restoreFromBackup(backup, exePath)
 			fail()
 		}
