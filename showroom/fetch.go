@@ -324,7 +324,7 @@ func fetchAllRooms(ctx context.Context) (rooms []room, err error) {
 
 // information about a user's room is parsed from their page
 func fetchRoom(ctx context.Context, link string) (status roomStatus, err error) {
-	req, err := makeRequest(ctx, "get", link, nil, "")
+	req, err := makeRequest(ctx, "GET", link, nil, "")
 	if err != nil {
 		return
 	}
