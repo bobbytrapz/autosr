@@ -1,6 +1,6 @@
 # Changelog
 
-## v2 - 2020-07
+## 1.1.0 - 2019-03
 ### New for users
 - Hook scripts
     {{config_path}}/autosr/hooks
@@ -8,4 +8,6 @@
     For example, having an executable "notify.py" in the "end-save" directory will run notify.py every time autosr completes a save.
 - Changes for showroom module
     The display name of a target updates when the user changes their title
-- Various bug fixes
+
+## v3 - 2020-07
+- Bug fixes
