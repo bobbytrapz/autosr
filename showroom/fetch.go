@@ -380,6 +380,11 @@ func readResponse(res *http.Response) (buf *bytes.Buffer, err error) {
 		return
 	}
 
+	if res.StatusCode != 200 {
+		err = fmt.Errorf("showroom.readReponse: %s", res.Status)
+		return
+	}
+
 	buf = &bytes.Buffer{}
 	io.Copy(buf, r)
 
