@@ -68,7 +68,10 @@ func (t *target) BeginSave(ctx context.Context) {
 	log.Println("showroom.BeginSave:", t.name)
 
 	if ShouldWatchEvents {
-		WatchEvents(ctx, t.bcsvrKey)
+		err := WatchEvents(ctx, t.bcsvrKey)
+		if err != nil {
+			log.Println("showroom.WatchEvents:", t.name)
+		}
 	}
 
 	return

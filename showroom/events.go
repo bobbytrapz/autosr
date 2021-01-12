@@ -156,7 +156,7 @@ func RecordEvent(logFile *os.File, ev []byte) {
 
 // WatchEvents tracks websockets events for a given key
 // a separate websocket connection is made for each chat room
-func WatchEvents(ctx context.Context, bcsvrKey string) {
+func WatchEvents(ctx context.Context, bcsvrKey string) error {
 	url := url.URL{
 		Scheme: "wss",
 		Host:   bcsvrHost,
@@ -176,7 +176,7 @@ func WatchEvents(ctx context.Context, bcsvrKey string) {
 	log.Printf("showroom.connectChatServer: dial %s (%v)", url.String(), header)
 	c, _, err := dialer.DialContext(ctx, url.String(), header)
 	if err != nil {
-		panic(err)
+		return err
 	}
 	log.Printf("showroom.connectChatServer: connected")
 
@@ -185,14 +185,14 @@ func WatchEvents(ctx context.Context, bcsvrKey string) {
 	log.Printf("showroom.connectChatServer: %s", subcmd)
 	if err := c.WriteMessage(websocket.TextMessage, subcmd); err != nil {
 		log.Printf("showroom.connectChatServer: tried to send: %s", err)
-		return
+		return err
 	}
 
 	// open chat log
 	logFile, err := os.OpenFile("chat.log", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
 		log.Printf("showroom.SubscribeChat: failed to open log file: %s", err)
-		return
+		return err
 	}
 
 	// fmt.Fprintf(logFile, "# Started at %s", time.Now())
@@ -266,5 +266,5 @@ func WatchEvents(ctx context.Context, bcsvrKey string) {
 		}
 	}()
 
-	return
+	return nil
 }
