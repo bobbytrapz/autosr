@@ -54,6 +54,9 @@ func fetchTargetInformation(ctx context.Context, link string) (*target, error) {
 		return nil, fmt.Errorf("showroom.fetchTargetInformation: '%s' %s", link, err)
 	}
 
+	// todo: we need to get the bcsvrKey
+	bcsvrKey := ""
+
 	name := strings.TrimSpace(s.Name)
 	// note: this works around a display bug in gocui
 	var buf bytes.Buffer
@@ -66,11 +69,12 @@ func fetchTargetInformation(ctx context.Context, link string) (*target, error) {
 	display := buf.String()
 
 	return &target{
-		name:    name,
-		display: display,
-		id:      s.ID,
-		link:    link,
-		urlKey:  s.LiveRoom.URLKey,
+		name:     name,
+		display:  display,
+		id:       s.ID,
+		link:     link,
+		urlKey:   s.LiveRoom.URLKey,
+		bcsvrKey: bcsvrKey,
 	}, nil
 }
 

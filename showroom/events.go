@@ -23,6 +23,7 @@ import (
 	"log"
 	"net/http"
 	"net/url"
+	"os"
 	"time"
 
 	"github.com/bobbytrapz/autosr/options"
@@ -36,19 +37,25 @@ type User struct {
 	ID   int
 }
 
+// Event in showroom
+type Event struct {
+	At       time.Time
+	bcsvrKey string
+}
+
 // Comment from chat
 type Comment struct {
 	User
+	Event
 	Text string
-	At   time.Time
 }
 
 // Gift sent
 type Gift struct {
 	User
+	Event
 	ID     int
 	Amount int
-	At     time.Time
 }
 
 var upgrader = websocket.Upgrader{
@@ -58,14 +65,24 @@ var upgrader = websocket.Upgrader{
 
 const (
 	bcsvrHost = "online.showroom-live.com:443"
-	bcsvrKey  = "59f5e9:vF3aKm5p"
 )
+
+// channel for sending message to chat server
+var msgSend chan []byte
+
+type chatConnection struct {
+	bcsvrKey  string // "59f5e9:vF3aKm5p"
+	startedAt time.Time
+}
 
 func parseEvent(ev []byte) (object interface{}, err error) {
 	// expecting = MSG	59eb86:iTW7lR5i	{created_at: 1547732326, u: 1707048, at: 6, t: 6}
 	if !bytes.HasPrefix(ev, []byte("MSG")) {
 		return
 	}
+
+	parts := bytes.Split(ev, []byte("\t"))
+	bcsvrKey := string(parts[1])
 
 	// look for start of json and unmarshal it
 	ndx := bytes.Index(ev, []byte("{"))
@@ -87,8 +104,11 @@ func parseEvent(ev []byte) (object interface{}, err error) {
 				Name: data["ac"].(string),
 				ID:   int(data["u"].(float64)),
 			},
+			Event: Event{
+				bcsvrKey: bcsvrKey,
+				At:       time.Unix(int64(data["created_at"].(float64)), 0),
+			},
 			Text: data["cm"].(string),
-			At:   time.Unix(int64(data["created_at"].(float64)), 0),
 		}, nil
 	case "2":
 		// gift
@@ -97,9 +117,12 @@ func parseEvent(ev []byte) (object interface{}, err error) {
 				Name: data["ac"].(string),
 				ID:   int(data["u"].(float64)),
 			},
+			Event: Event{
+				bcsvrKey: bcsvrKey,
+				At:       time.Unix(int64(data["created_at"].(float64)), 0),
+			},
 			ID:     int(data["u"].(float64)),
 			Amount: int(data["n"].(float64)),
-			At:     time.Unix(int64(data["created_at"].(float64)), 0),
 		}, nil
 	case 8:
 		// telop change
@@ -113,29 +136,31 @@ func parseEvent(ev []byte) (object interface{}, err error) {
 }
 
 // RecordEvent stores the event in the database
-func RecordEvent(ev []byte) {
+func RecordEvent(logFile *os.File, ev []byte) {
 	o, err := parseEvent(ev)
 	if err != nil {
-		log.Printf("[showroom] RecordEvent: parseEvent: %s", err)
+		log.Printf("showroom.RecordEvent: parseEvent: %s", err)
 		return
 	}
 	switch v := o.(type) {
 	// could write comments to recorded/[name]/[date].log
 	// now use tail -F [date].log to follow all the chat
 	case Comment:
-		fmt.Printf("record comment: %v\n", v)
+		fmt.Printf("record comment: %v (%v)\n", v, logFile)
 	case Gift:
-		fmt.Printf("record gift: %v\n", v)
+		fmt.Printf("record gift: %v (%v)\n", v, logFile)
 	case nil:
 	default:
 	}
 }
 
-type wsConnection struct {
-	URL url.URL
-}
-
-func connect(ctx context.Context, w *wsConnection) {
+// WatchEvents tracks websockets events for a given key
+// a separate websocket connection is made for each chat room
+func WatchEvents(ctx context.Context, bcsvrKey string) {
+	url := url.URL{
+		Scheme: "wss",
+		Host:   bcsvrHost,
+	}
 	ua := options.Get("user_agent")
 
 	// dial
@@ -148,38 +173,50 @@ func connect(ctx context.Context, w *wsConnection) {
 	header := http.Header{
 		"User-Agent": []string{ua},
 	}
-	log.Printf("[websocket] dial %s (%v)", w.URL.String(), header)
-	c, _, err := dialer.DialContext(ctx, w.URL.String(), header)
+	log.Printf("showroom.connectChatServer: dial %s (%v)", url.String(), header)
+	c, _, err := dialer.DialContext(ctx, url.String(), header)
 	if err != nil {
 		panic(err)
 	}
-	log.Printf("[websocket] connected")
+	log.Printf("showroom.connectChatServer: connected")
+
+	// subscribe to chat
+	subcmd := []byte(fmt.Sprintf("SUB\t%s", bcsvrKey))
+	log.Printf("showroom.connectChatServer: %s", subcmd)
+	if err := c.WriteMessage(websocket.TextMessage, subcmd); err != nil {
+		log.Printf("showroom.connectChatServer: tried to send: %s", err)
+		return
+	}
+
+	// open chat log
+	logFile, err := os.OpenFile("chat.log", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	if err != nil {
+		log.Printf("showroom.SubscribeChat: failed to open log file: %s", err)
+		return
+	}
+
+	// fmt.Fprintf(logFile, "# Started at %s", time.Now())
 
 	// commands
-	subcmd := []byte(fmt.Sprintf("SUB\t%s", bcsvrKey))
 	pingcmd := []byte("PING\tshowroom")
 	// quitcmd := []byte("QUIT")
 
-	// subscribe
-	log.Printf("[websocket] %s", subcmd)
-	if err := c.WriteMessage(websocket.TextMessage, subcmd); err != nil {
-		log.Println("[websocket] tried to send sub:", err)
-	}
-
+	msgSend = make(chan []byte, 1)
 	done := make(chan struct{}, 1)
 	// read
 	track.Add(1)
 	go func() {
 		defer track.Done()
 		defer close(done)
-		log.Printf("[websocket] read")
+		defer logFile.Close()
+		log.Printf("showroom.connectChatServer: read")
 		for {
 			_, msg, err := c.ReadMessage()
 			if err != nil {
-				log.Println("[websocket:read] err:", err)
+				log.Println("showroom.connectChatServer: err:", err)
 				return
 			}
-			RecordEvent(msg)
+			RecordEvent(logFile, msg)
 		}
 	}()
 
@@ -188,7 +225,7 @@ func connect(ctx context.Context, w *wsConnection) {
 	go func() {
 		defer track.Done()
 
-		log.Printf("[websocket] write")
+		log.Printf("showroom.connectChatServer: write")
 		defer c.Close()
 
 		pingTicker := time.NewTicker(1 * time.Minute)
@@ -198,22 +235,22 @@ func connect(ctx context.Context, w *wsConnection) {
 			case <-done:
 				return
 			case <-pingTicker.C:
-				log.Printf("[websocket:write] %s", pingcmd)
+				log.Printf("showroom.connectChatServer: %s", pingcmd)
 				if err := c.WriteMessage(websocket.TextMessage, pingcmd); err != nil {
-					log.Println("[websocket:write] tried to send ping:", err)
+					log.Println("showroom.connectChatServer: tried to send ping:", err)
 				}
 			case <-ctx.Done():
 				/*
 					// sending quit causes abnormal closure
-					log.Printf("[websocket] %s", quitcmd)
+					log.Printf("showroom.connectChatServer: %s", quitcmd)
 					if err := c.WriteMessage(websocket.TextMessage, quitcmd); err != nil {
-						log.Println("[websocket:write] tried to send quit:", err)
+						log.Println("showroom.connectChatServer: tried to send quit:", err)
 					}
 				*/
 
-				log.Println("[websocket:write] close...")
+				log.Println("showroom.connectChatServer: close...")
 				if err := c.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, "")); err != nil {
-					log.Println("[websocket:write] close:", err)
+					log.Println("showroom.connectChatServer: close:", err)
 					return
 				}
 
@@ -225,33 +262,6 @@ func connect(ctx context.Context, w *wsConnection) {
 
 				// stop write
 				return
-			}
-		}
-	}()
-
-	return
-}
-
-// WatchEvents tracks websockets events
-func WatchEvents(ctx context.Context) {
-	// create websocket connection
-	connect(ctx, &wsConnection{
-		URL: url.URL{
-			Scheme: "wss",
-			Host:   bcsvrHost,
-		},
-	})
-
-	track.Add(1)
-	go func() {
-		defer track.Done()
-
-		for {
-			select {
-			case <-ctx.Done():
-				log.Println("showroom.WatchEvents:", ctx.Err())
-				return
-			default:
 			}
 		}
 	}()

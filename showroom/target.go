@@ -28,11 +28,12 @@ import (
 
 type target struct {
 	// info
-	name    string
-	display string
-	id      int
-	link    string
-	urlKey  string
+	name     string
+	display  string
+	id       int
+	link     string
+	urlKey   string
+	bcsvrKey string
 }
 
 func (t *target) updateInfo(ctx context.Context) error {
@@ -65,6 +66,11 @@ func (t *target) BeginSnipe(ctx context.Context) {
 // BeginSave callback
 func (t *target) BeginSave(ctx context.Context) {
 	log.Println("showroom.BeginSave:", t.name)
+
+	if ShouldWatchEvents {
+		WatchEvents(ctx, t.bcsvrKey)
+	}
+
 	return
 }
 
