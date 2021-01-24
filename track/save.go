@@ -134,15 +134,15 @@ func performSave(ctx context.Context, t *tracked, streamURL string) error {
 		var err error
 		cmd, saveAs, err = runDownloader(ctx, url, name)
 		if err != nil {
-			return fmt.Errorf("track.save: %s", err)
+			return fmt.Errorf("runSave: %w", err)
 		}
 
 		if err := cmd.Start(); err != nil {
-			return fmt.Errorf("track.save: %s", err)
+			return fmt.Errorf("runSave: %w", err)
 		}
 		app = cmd.Args[0]
 		pid = cmd.Process.Pid
-		log.Printf("track.save: %s [%s %d]", name, app, pid)
+		log.Printf("runSave: %s [%s %d]", name, app, pid)
 		runHooks("begin-save", map[string]interface{}{
 			"Name":   task.name,
 			"Link":   task.link,
@@ -172,14 +172,14 @@ func performSave(ctx context.Context, t *tracked, streamURL string) error {
 	for {
 		select {
 		case <-ctx.Done():
-			cmd.Process.Kill()
+			_ = cmd.Process.Kill()
 			err := cmd.Wait()
 			t.SetFinishedAt(time.Now())
 			log.Printf("track.save: %s %s [%s %d] (%s)", name, ctx.Err(), app, pid, err)
 			return nil
 		case <-t.cancel:
 			// we have been selected for cancellation
-			cmd.Process.Kill()
+			_ = cmd.Process.Kill()
 			err := cmd.Wait()
 			t.SetFinishedAt(time.Now())
 			log.Printf("track.save: %s canceled [%s %d] (%s)", name, app, pid, err)
@@ -195,7 +195,12 @@ func performSave(ctx context.Context, t *tracked, streamURL string) error {
 			}
 			log.Printf("track.save: %s recovered (%s)", name, d.Truncate(time.Millisecond))
 			// run a new save command
-			runSave(newURL)
+			err = runSave(newURL)
+			if err != nil {
+				log.Printf("track.save: while recovering: %s", err)
+				t.SetFinishedAt(time.Now().Add(-d))
+				return nil
+			}
 		}
 	}
 }
