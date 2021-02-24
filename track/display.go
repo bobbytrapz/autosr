@@ -18,7 +18,6 @@ package track
 import (
 	"fmt"
 	"io"
-	"log"
 	"sort"
 	"strings"
 	"text/tabwriter"
@@ -78,8 +77,7 @@ func displayList(lst []*tracked) (rows []DisplayRow) {
 	for _, t := range lst {
 		row, err := displayRow(t)
 		if err != nil {
-			// log but ignore invalid row error
-			log.Println("track.displayList:", err)
+			// skip invalid row
 			continue
 		}
 

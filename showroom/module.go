@@ -49,33 +49,35 @@ func (m Module) Hostname() string {
 }
 
 func fetchTargetInformation(ctx context.Context, link string) (*target, error) {
-	s, err := fetchRoom(ctx, link)
-	if err != nil {
-		return nil, fmt.Errorf("showroom.fetchTargetInformation: '%s' %s", link, err)
+	// if there is a failure we return an incomplete target
+	t := &target{
+		link: link,
 	}
 
-	// todo: we need to get the bcsvrKey
-	bcsvrKey := ""
+	s, err := fetchRoom(ctx, link)
+	if err != nil {
+		// problem fetching the room. probably offline.
+		return t, fmt.Errorf("showroom.fetchTargetInformation: '%s' %s", link, err)
+	}
 
-	name := strings.TrimSpace(s.Name)
+	t.id = s.ID
+	t.urlKey = s.LiveRoom.URLKey
+
+	// todo: we need to get the bcsvrKey
+	t.bcsvrKey = ""
+
+	t.name = strings.TrimSpace(s.Name)
 	// note: this works around a display bug in gocui
 	var buf bytes.Buffer
-	for _, r := range name {
+	for _, r := range t.name {
 		buf.WriteRune(r)
 		if r != ' ' && r != '(' && r != ')' {
 			buf.WriteRune(' ')
 		}
 	}
-	display := buf.String()
+	t.display = buf.String()
 
-	return &target{
-		name:     name,
-		display:  display,
-		id:       s.ID,
-		link:     link,
-		urlKey:   s.LiveRoom.URLKey,
-		bcsvrKey: bcsvrKey,
-	}, nil
+	return t, nil
 }
 
 // AddTarget to track
@@ -87,7 +89,7 @@ func (m Module) AddTarget(ctx context.Context, link string) (track.Target, error
 
 	added, err := fetchTargetInformation(ctx, link)
 	if err != nil {
-		return nil, fmt.Errorf("showroom.AddTarget: '%s' %s", link, err)
+		return added, fmt.Errorf("showroom.AddTarget: '%s' %s", link, err)
 	}
 
 	return added, nil

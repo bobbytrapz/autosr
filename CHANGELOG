@@ -14,3 +14,7 @@
 
 ## v4 - 2021-01
 - Bug fixes
+
+## v5 - 2021-02
+- Modify behavior for 'end-save' hook. It now gives only one save path instead of a list of paths.
+- Fixed bug with offline handling. We will now attempt to fetch targets when internet access is restored.

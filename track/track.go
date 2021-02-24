@@ -93,6 +93,7 @@ func Start(ctx context.Context) error {
 			log.Println("track.Start: cannot make watcher:", err)
 			return
 		}
+		defer w.Close()
 
 		if err := w.Add(listPath); err != nil {
 			log.Println("track.Start: cannot watch track list:", err)
@@ -155,11 +156,11 @@ func AddTarget(ctx context.Context, link string) error {
 	}
 
 	target, err := m.AddTarget(ctx, link)
-	if err != nil {
-		return fmt.Errorf("track.AddTarget: %s %s", link, err)
-	}
+
+	// if there was an error but the link was valid the module should return a target
+	// if the module is unable to handle this link it should return nil
 	if target == nil {
-		return errors.New("track.AddTarget: target is nil")
+		return fmt.Errorf("track.AddTarget: link was not accepted: %q", link)
 	}
 
 	fmt.Println(host, "added", link)
@@ -169,6 +170,10 @@ func AddTarget(ctx context.Context, link string) error {
 		hostname: host,
 	}
 	beginTracking(added)
+
+	if err != nil {
+		return fmt.Errorf("track.AddTarget: %s %s", link, err)
+	}
 
 	// check target right away
 	if _, err := target.CheckStream(ctx); err == nil {
