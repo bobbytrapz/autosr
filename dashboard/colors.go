@@ -35,7 +35,7 @@ func colorFromString(c string) (attr gocui.Attribute) {
 		attr = gocui.ColorBlue
 	case "magenta":
 		attr = gocui.ColorMagenta
-	case "cyna":
+	case "cyan":
 		attr = gocui.ColorCyan
 	case "white":
 		attr = gocui.ColorWhite

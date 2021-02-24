@@ -29,7 +29,7 @@ type Policy struct {
 	Steps []int
 }
 
-// DefaultPolicy backoff poilicy in ms
+// DefaultPolicy backoff policy in ms
 var DefaultPolicy = Policy{
 	[]int{0, 10, 10, 100, 100, 500, 500, 3000, 3000, 5000, 5000, 10000, 10000, 20000, 20000, 40000, 40000},
 }

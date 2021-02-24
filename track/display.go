@@ -132,21 +132,21 @@ func (d DisplayTable) Output(dst io.Writer) error {
 	tw := tabwriter.NewWriter(dst, 0, 0, 4, ' ', 0)
 
 	for _, row := range d.Live {
-		fmt.Fprintf(tw, "%s\t%s\n", row.Status, row.Name)
+		_, _ = fmt.Fprintf(tw, "%s\t%s\n", row.Status, row.Name)
 	}
 	if len(d.Live) > 0 {
-		fmt.Fprintln(tw, "\t\t\t")
+		_, _ = fmt.Fprintln(tw, "\t\t\t")
 	}
 
 	for _, row := range d.Upcoming {
-		fmt.Fprintf(tw, "%s\t%s\n", row.Status, row.Name)
+		_, _ = fmt.Fprintf(tw, "%s\t%s\n", row.Status, row.Name)
 	}
 	if len(d.Upcoming) > 0 {
-		fmt.Fprintln(tw, "\t\t\t")
+		_, _ = fmt.Fprintln(tw, "\t\t\t")
 	}
 
 	for _, row := range d.Offline {
-		fmt.Fprintf(tw, "%s\t%s\n", row.Status, row.Name)
+		_, _ = fmt.Fprintf(tw, "%s\t%s\n", row.Status, row.Name)
 	}
 
 	return tw.Flush()
