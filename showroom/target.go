@@ -78,7 +78,7 @@ func (t *target) BeginSave(ctx context.Context) {
 }
 
 // EndSave callback
-func (t *target) EndSave(ctx context.Context) {
+func (t *target) EndSave(_ context.Context) {
 	log.Println("showroom.EndSave:", t.name)
 	return
 }
