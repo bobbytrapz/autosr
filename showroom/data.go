@@ -100,10 +100,10 @@ type roomStatus struct {
 // room section of roomStatus
 type liveRoomInfo struct {
 	URLKey      string `json:"room_url_key"`
-	LastLive    string `json:"last_lived_at"`
+	LastLive    interface{} `json:"last_lived_at"`
 	NextLive    string `json:"next_live"`
 	YouTubeID   string `json:"youtube_id"`
-	FollowerNum int `json:"follower_num"`
+	FollowerNum interface{} `json:"follower_num"`
 }
 
 // a showroom stream
