@@ -97,13 +97,13 @@ type roomStatus struct {
 	LiveRoom liveRoomInfo `json:"room"`
 }
 
-// room secition of roomStatus
+// room section of roomStatus
 type liveRoomInfo struct {
 	URLKey      string `json:"room_url_key"`
 	LastLive    string `json:"last_lived_at"`
 	NextLive    string `json:"next_live"`
 	YouTubeID   string `json:"youtube_id"`
-	FollowerNum string `json:"follower_num"`
+	FollowerNum int `json:"follower_num"`
 }
 
 // a showroom stream
