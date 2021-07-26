@@ -1,4 +1,4 @@
 package version
 
 // String is the version string
-var String = "v5"
+var String = "v6"
