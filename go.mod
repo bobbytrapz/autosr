@@ -3,7 +3,7 @@ module github.com/bobbytrapz/autosr
 require (
 	github.com/BurntSushi/toml v0.3.1 // indirect
 	github.com/fsnotify/fsnotify v1.4.7
-	github.com/gorilla/websocket v1.4.0
+	github.com/gorilla/websocket v1.4.1
 	github.com/inconshreveable/mousetrap v1.0.0 // indirect
 	github.com/jroimartin/gocui v0.4.0
 	github.com/kr/pretty v0.2.0 // indirect
