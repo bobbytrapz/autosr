@@ -475,10 +475,15 @@ func findInitialData(doc *html.Node) (roomStatus, error) {
 		switch n.Type {
 		case html.TextNode:
 			if strings.Contains(n.Data, "__NUXT__") {
-				status = extractInitialDataFromNuxt(n.Data)
-				if len(status.LiveRoom.URLKey) > 0 {
+				extractedStatus := extractInitialDataFromNuxt(n.Data)
+				if len(extractedStatus.LiveRoom.URLKey) > 0 {
 					err = nil
 				}
+				if len(status.Name) == 0 {
+					status.Name = extractedStatus.Name
+				}
+				status.ID = extractedStatus.ID
+				status.LiveRoom.URLKey = extractedStatus.LiveRoom.URLKey
 			}
 		}
 	}
@@ -491,6 +496,17 @@ func findInitialData(doc *html.Node) (roomStatus, error) {
 			case "script":
 				for c := n.FirstChild; c != nil; c = c.NextSibling {
 					extractText(c)
+				}
+			case "h1":
+				for _, a := range n.Attr {
+					if a.Key == "class" {
+						switch a.Val {
+						case "room-name":
+							if n.FirstChild != nil {
+								status.Name = n.FirstChild.Data
+							}
+						}
+					}
 				}
 			}
 		}
@@ -524,7 +540,11 @@ func extractInitialDataFromNuxt(text string) roomStatus {
 
 	m = reNuxtPerformerName.FindStringSubmatch(text)
 	if len(m) == 2 {
-		status.Name = m[1]
+		if len(m[1]) > 0 {
+			status.Name = m[1]
+		} else {
+			status.Name = status.LiveRoom.URLKey
+		}
 	}
 
 	return status
