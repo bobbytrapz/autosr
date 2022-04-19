@@ -22,16 +22,19 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/bobbytrapz/autosr/retry"
-	"golang.org/x/net/html"
-	"golang.org/x/net/publicsuffix"
 	"io"
 	"net/http"
 	"net/http/cookiejar"
 	"net/url"
+	"regexp"
+	"strconv"
+	"strings"
 	"time"
 
 	"github.com/bobbytrapz/autosr/options"
+	"github.com/bobbytrapz/autosr/retry"
+	"golang.org/x/net/html"
+	"golang.org/x/net/publicsuffix"
 )
 
 const (
@@ -322,25 +325,35 @@ func fetchAllRooms(ctx context.Context) (rooms []room, err error) {
 	return
 }
 
-// information about a user's room is parsed from their page
-func fetchRoom(ctx context.Context, link string) (status roomStatus, err error) {
+func fetchPage(ctx context.Context, link string) (*html.Node, error) {
 	req, err := makeRequest(ctx, "GET", link, nil, "")
 	if err != nil {
-		return
+		return nil, err
 	}
 	res, err := httpClient.Do(req)
 	if err != nil {
-		return
+		return nil, err
 	}
 	defer res.Body.Close()
 
 	buf, err := readResponse(res)
 	if err != nil {
 		err = fmt.Errorf("readResponse %s", err)
-		return
+		return nil, err
 	}
 
 	doc, err := html.Parse(buf)
+	if err != nil {
+		return nil, err
+	}
+
+	return doc, err
+}
+
+// information about a user's room is parsed from their page
+func fetchRoom(ctx context.Context, link string) (status roomStatus, err error) {
+	var doc *html.Node
+	doc, err = fetchPage(ctx, link)
 	if err != nil {
 		return
 	}
@@ -392,65 +405,127 @@ func readResponse(res *http.Response) (buf *bytes.Buffer, err error) {
 }
 
 // find the js-initial-data and js-live-data tags and unmarshal them
-func findInitialData(doc *html.Node) (status roomStatus, err error) {
-	var data string
-	var liveData string
-	var fn func(*html.Node)
-	fn = func(n *html.Node) {
-		if n.Type == html.ElementNode {
+//func findInitialData(doc *html.Node) (status roomStatus, err error) {
+//	var data string
+//	var liveData string
+//	var fn func(*html.Node)
+//	fn = func(n *html.Node) {
+//		if n.Type == html.ElementNode {
+//			switch n.Data {
+//			case "script":
+//				for _, a := range n.Attr {
+//					if a.Key == "id" {
+//						switch a.Val {
+//						case "js-initial-data":
+//							for _, a := range n.Attr {
+//								if a.Key == "data-json" {
+//									data = a.Val
+//									return
+//								}
+//							}
+//						case "js-live-data":
+//							for _, a := range n.Attr {
+//								if a.Key == "data-json" {
+//									liveData = a.Val
+//									return
+//								}
+//							}
+//						}
+//					}
+//				}
+//			}
+//		}
+//
+//		for c := n.FirstChild; c != nil; c = c.NextSibling {
+//			fn(c)
+//		}
+//	}
+//	fn(doc)
+//
+//	if data != "" {
+//		buf := bytes.NewBufferString(data)
+//		err = json.Unmarshal(buf.Bytes(), &status)
+//		if err != nil {
+//			err = fmt.Errorf("showroom.findInitialData: %s", err)
+//			return
+//		}
+//	}
+//
+//	if liveData != "" {
+//		buf := bytes.NewBufferString(liveData)
+//		err = json.Unmarshal(buf.Bytes(), &status)
+//		if err != nil {
+//			err = fmt.Errorf("showroom.findInitialData: %s", err)
+//			return
+//		}
+//	}
+//
+//	if data == "" && liveData == "" {
+//		err = errors.New("showroom.findInitialData: no initial data")
+//		return
+//	}
+//
+//	return
+//}
+
+func findInitialData(doc *html.Node) (roomStatus, error) {
+	var status roomStatus
+	err := errors.New("showroom.findInitialData: no initial data")
+	extractText := func(n *html.Node) {
+		switch n.Type {
+		case html.TextNode:
+			if strings.Contains(n.Data, "__NUXT__") {
+				status = extractInitialDataFromNuxt(n.Data)
+				if len(status.LiveRoom.URLKey) > 0 {
+					err = nil
+				}
+			}
+		}
+	}
+
+	var findScripts func(*html.Node)
+	findScripts = func(n *html.Node) {
+		switch n.Type {
+		case html.ElementNode:
 			switch n.Data {
 			case "script":
-				for _, a := range n.Attr {
-					if a.Key == "id" {
-						switch a.Val {
-						case "js-initial-data":
-							for _, a := range n.Attr {
-								if a.Key == "data-json" {
-									data = a.Val
-									return
-								}
-							}
-						case "js-live-data":
-							for _, a := range n.Attr {
-								if a.Key == "data-json" {
-									liveData = a.Val
-									return
-								}
-							}
-						}
-					}
+				for c := n.FirstChild; c != nil; c = c.NextSibling {
+					extractText(c)
 				}
 			}
 		}
 
 		for c := n.FirstChild; c != nil; c = c.NextSibling {
-			fn(c)
+			findScripts(c)
 		}
 	}
-	fn(doc)
+	findScripts(doc)
 
-	if data != "" {
-		buf := bytes.NewBufferString(data)
-		err = json.Unmarshal(buf.Bytes(), &status)
-		if err != nil {
-			err = fmt.Errorf("showroom.findInitialData: %s", err)
-			return
-		}
+	return status, err
+}
+
+var reNuxtRoomID = regexp.MustCompile(`room_id=(?P<RoomID>[\d]+)\"`)
+var reNuxtRoomURLKey = regexp.MustCompile(`room_url_key:\"(?P<RoomURLKey>[^\"]*)\"`)
+var reNuxtPerformerName = regexp.MustCompile(`performer_name:\"(?P<PerformerName>[^\"]*)\"`)
+
+func extractInitialDataFromNuxt(text string) roomStatus {
+	// we only get what is needed for now
+	// ID, LiveRoom.URLKey, Name
+	var status roomStatus
+	m := reNuxtRoomID.FindStringSubmatch(text)
+	if len(m) == 2 {
+		status.ID, _ = strconv.Atoi(m[1])
 	}
 
-	if liveData != "" {
-		buf := bytes.NewBufferString(liveData)
-		err = json.Unmarshal(buf.Bytes(), &status)
-		if err != nil {
-			err = fmt.Errorf("showroom.findInitialData: %s", err)
-			return
-		}
+	m = reNuxtRoomURLKey.FindStringSubmatch(text)
+	if len(m) == 2 {
+		status.LiveRoom.URLKey = m[1]
 	}
 
-	if data == "" && liveData == "" {
-		err = errors.New("showroom.findInitialData: no initial data")
-		return
+	m = reNuxtPerformerName.FindStringSubmatch(text)
+	if len(m) == 2 {
+		status.Name = m[1]
 	}
 
-	return
+	return status
 }
