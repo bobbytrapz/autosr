@@ -67,7 +67,7 @@ func readList(ctx context.Context) error {
 	for link := range lst {
 		select {
 		case <-ctx.Done():
-			log.Println("track.readList:", ctx.Err())
+			log.Println("ERROR: track.readList:", ctx.Err())
 			break
 		default:
 		}
@@ -77,7 +77,7 @@ func readList(ctx context.Context) error {
 
 			err := AddTarget(ctx, l)
 			if err != nil {
-				fmt.Println(err)
+				fmt.Printf("ERROR: %s\n", err)
 				return
 			}
 
