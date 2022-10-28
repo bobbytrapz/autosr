@@ -18,8 +18,8 @@ go mod tidy
 
 go test ./...
 GOOS=darwin go build -o dist/osx/$name-osx
+GOOS=darwin GOARCH=arm64 go build -o dist/osx/$name-osx-arm64
 GOOS=linux go build -o dist/linux/$name
 GOOS=windows go build -o dist/windows/${name}.exe
 
 go install
-

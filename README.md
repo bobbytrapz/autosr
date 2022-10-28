@@ -111,11 +111,20 @@ Use 'autosr options' to make changes.
 
 # Installing on Mac OS X
 
-Save [autosr-osx](https://github.com/bobbytrapz/autosr/releases/latest) to your home directory.
+If your computer contains an Apple silicon chip such as the Apple M1:
+Save [autosr-osx-arm64](https://github.com/bobbytrapz/autosr/releases/latest) to your home directory.
+Otherwise, save [autosr-osx](https://github.com/bobbytrapz/autosr/releases/latest) to your home directory.
 
 Then open Terminal and run the following commands one at a time.
 
-Install autosr:
+Install autosr (if Apple silicon):
+
+```
+chmod +x autosr-osx-arm64
+sudo mv autosr-osx-arm64 /usr/local/bin/autosr
+```
+
+Install autosr (if not Apple silicon)
 
 ```
 chmod +x autosr-osx
@@ -128,7 +137,13 @@ Install streamlink:
 easy_install -U streamlink
 ```
 
-When a new version is released and you want to update:
+On newer Macs (>=12.3) you will need to install [Homebrew](https://brew.sh/) then:
+
+```
+brew install streamlink
+```
+
+When a new version is released, and you want to update:
 
 ```
 sudo autosr update

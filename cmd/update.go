@@ -92,7 +92,11 @@ var updateCmd = &cobra.Command{
 		var name string
 		switch runtime.GOOS {
 		case "darwin":
-			name = "autosr-osx"
+			if runtime.GOARCH == "arm64" {
+				name = "autosr-osx-arm64"
+			} else {
+				name = "autosr-osx"
+			}
 		case "windows":
 			name = "autosr.exe"
 		case "linux":
@@ -101,6 +105,8 @@ var updateCmd = &cobra.Command{
 			fmt.Println("autosr update is not supported for your OS.")
 			os.Exit(1)
 		}
+
+		fmt.Printf("Looking for %q on Github.\n", name)
 
 		res, err := http.Get(releasesURL)
 		if err != nil {
