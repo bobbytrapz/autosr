@@ -20,12 +20,12 @@ import (
 	"compress/gzip"
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
 	"net/http"
 	"net/http/cookiejar"
 	"net/url"
+	"path"
 	"regexp"
 	"strconv"
 	"strings"
@@ -360,6 +360,11 @@ func fetchRoom(ctx context.Context, link string) (status roomStatus, err error) 
 
 	status, err = findInitialData(doc)
 
+	if len(status.LiveRoom.URLKey) == 0 {
+		u, _ := url.Parse(link)
+		status.LiveRoom.URLKey = path.Base(u.Path)
+	}
+
 	return
 }
 
@@ -470,15 +475,11 @@ func readResponse(res *http.Response) (buf *bytes.Buffer, err error) {
 
 func findInitialData(doc *html.Node) (roomStatus, error) {
 	var status roomStatus
-	err := errors.New("showroom.findInitialData: no initial data")
 	extractText := func(n *html.Node) {
 		switch n.Type {
 		case html.TextNode:
 			if strings.Contains(n.Data, "__NUXT__") {
 				extractedStatus := extractInitialDataFromNuxt(n.Data)
-				if len(extractedStatus.LiveRoom.URLKey) > 0 {
-					err = nil
-				}
 				if len(status.Name) == 0 {
 					status.Name = extractedStatus.Name
 				}
@@ -517,7 +518,7 @@ func findInitialData(doc *html.Node) (roomStatus, error) {
 	}
 	findScripts(doc)
 
-	return status, err
+	return status, nil
 }
 
 var reNuxtRoomID = regexp.MustCompile(`room_id=(?P<RoomID>[\d]+)\"`)
