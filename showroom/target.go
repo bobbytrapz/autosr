@@ -117,7 +117,7 @@ func (t *target) CheckLive(ctx context.Context) (isLive bool, err error) {
 // CheckStream gives nil if a stream has been found and expects the user to possibly be live
 func (t *target) CheckStream(ctx context.Context) (streamURL string, err error) {
 	if t.urlKey == "" {
-		// this target does not have the required target information so we attempt to update
+		// this target does not have the required target information, so we attempt to update
 		if err := t.updateInfo(ctx); err != nil {
 			return "", fmt.Errorf("%s is not ready to be checked", t.name)
 		}
