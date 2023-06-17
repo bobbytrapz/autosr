@@ -25,10 +25,6 @@ import (
 	"net/http"
 	"net/http/cookiejar"
 	"net/url"
-	"path"
-	"regexp"
-	"strconv"
-	"strings"
 	"time"
 
 	"github.com/bobbytrapz/autosr/options"
@@ -351,21 +347,8 @@ func fetchPage(ctx context.Context, link string) (*html.Node, error) {
 }
 
 // information about a user's room is parsed from their page
-func fetchRoom(ctx context.Context, link string) (status roomStatus, err error) {
-	var doc *html.Node
-	doc, err = fetchPage(ctx, link)
-	if err != nil {
-		return
-	}
-
-	status, err = findInitialData(doc)
-
-	if len(status.LiveRoom.URLKey) == 0 {
-		u, _ := url.Parse(link)
-		status.LiveRoom.URLKey = path.Base(u.Path)
-	}
-
-	return
+func fetchRoom(ctx context.Context, link string) (roomStatus, error) {
+	return scrapeRoomData(ctx, link)
 }
 
 // CommentURLFromRoomID given an id gives the url comments can be fetched from
@@ -407,146 +390,4 @@ func readResponse(res *http.Response) (buf *bytes.Buffer, err error) {
 	io.Copy(buf, r)
 
 	return
-}
-
-// find the js-initial-data and js-live-data tags and unmarshal them
-//func findInitialData(doc *html.Node) (status roomStatus, err error) {
-//	var data string
-//	var liveData string
-//	var fn func(*html.Node)
-//	fn = func(n *html.Node) {
-//		if n.Type == html.ElementNode {
-//			switch n.Data {
-//			case "script":
-//				for _, a := range n.Attr {
-//					if a.Key == "id" {
-//						switch a.Val {
-//						case "js-initial-data":
-//							for _, a := range n.Attr {
-//								if a.Key == "data-json" {
-//									data = a.Val
-//									return
-//								}
-//							}
-//						case "js-live-data":
-//							for _, a := range n.Attr {
-//								if a.Key == "data-json" {
-//									liveData = a.Val
-//									return
-//								}
-//							}
-//						}
-//					}
-//				}
-//			}
-//		}
-//
-//		for c := n.FirstChild; c != nil; c = c.NextSibling {
-//			fn(c)
-//		}
-//	}
-//	fn(doc)
-//
-//	if data != "" {
-//		buf := bytes.NewBufferString(data)
-//		err = json.Unmarshal(buf.Bytes(), &status)
-//		if err != nil {
-//			err = fmt.Errorf("showroom.findInitialData: %s", err)
-//			return
-//		}
-//	}
-//
-//	if liveData != "" {
-//		buf := bytes.NewBufferString(liveData)
-//		err = json.Unmarshal(buf.Bytes(), &status)
-//		if err != nil {
-//			err = fmt.Errorf("showroom.findInitialData: %s", err)
-//			return
-//		}
-//	}
-//
-//	if data == "" && liveData == "" {
-//		err = errors.New("showroom.findInitialData: no initial data")
-//		return
-//	}
-//
-//	return
-//}
-
-func findInitialData(doc *html.Node) (roomStatus, error) {
-	var status roomStatus
-	extractText := func(n *html.Node) {
-		switch n.Type {
-		case html.TextNode:
-			if strings.Contains(n.Data, "__NUXT__") {
-				extractedStatus := extractInitialDataFromNuxt(n.Data)
-				if len(status.Name) == 0 {
-					status.Name = extractedStatus.Name
-				}
-				status.ID = extractedStatus.ID
-				status.LiveRoom.URLKey = extractedStatus.LiveRoom.URLKey
-			}
-		}
-	}
-
-	var findScripts func(*html.Node)
-	findScripts = func(n *html.Node) {
-		switch n.Type {
-		case html.ElementNode:
-			switch n.Data {
-			case "script":
-				for c := n.FirstChild; c != nil; c = c.NextSibling {
-					extractText(c)
-				}
-			case "h1":
-				for _, a := range n.Attr {
-					if a.Key == "class" {
-						switch a.Val {
-						case "room-name":
-							if n.FirstChild != nil {
-								status.Name = n.FirstChild.Data
-							}
-						}
-					}
-				}
-			}
-		}
-
-		for c := n.FirstChild; c != nil; c = c.NextSibling {
-			findScripts(c)
-		}
-	}
-	findScripts(doc)
-
-	return status, nil
-}
-
-var reNuxtRoomID = regexp.MustCompile(`room_id=(?P<RoomID>[\d]+)\"`)
-var reNuxtRoomURLKey = regexp.MustCompile(`room_url_key:\"(?P<RoomURLKey>[^\"]*)\"`)
-var reNuxtPerformerName = regexp.MustCompile(`performer_name:\"(?P<PerformerName>[^\"]*)\"`)
-
-func extractInitialDataFromNuxt(text string) roomStatus {
-	// we only get what is needed for now
-	// ID, LiveRoom.URLKey, Name
-	var status roomStatus
-	m := reNuxtRoomID.FindStringSubmatch(text)
-	if len(m) == 2 {
-		status.ID, _ = strconv.Atoi(m[1])
-	}
-
-	m = reNuxtRoomURLKey.FindStringSubmatch(text)
-	if len(m) == 2 {
-		status.LiveRoom.URLKey = m[1]
-	}
-
-	m = reNuxtPerformerName.FindStringSubmatch(text)
-	if len(m) == 2 {
-		if len(m[1]) > 0 {
-			status.Name = m[1]
-		} else {
-			status.Name = status.LiveRoom.URLKey
-		}
-	}
-
-	return status
 }

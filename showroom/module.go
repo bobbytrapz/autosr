@@ -80,38 +80,6 @@ func fetchTargetInformation(ctx context.Context, link string) (*target, error) {
 	return t, nil
 }
 
-func fetchTargetInformation2(ctx context.Context, link string) (*target, error) {
-	// if there is a failure we return an incomplete target
-	t := &target{
-		link: link,
-	}
-
-	s, err := fetchRoom(ctx, link)
-	if err != nil {
-		// problem fetching the room. probably offline.
-		return t, fmt.Errorf("showroom.fetchTargetInformation: '%s' %s", link, err)
-	}
-
-	t.id = s.ID
-	t.urlKey = s.LiveRoom.URLKey
-
-	// todo: we need to get the bcsvrKey
-	t.bcsvrKey = ""
-
-	t.name = strings.TrimSpace(s.Name)
-	// note: this works around a display bug in gocui
-	var buf bytes.Buffer
-	for _, r := range t.name {
-		buf.WriteRune(r)
-		if r != ' ' && r != '(' && r != ')' {
-			buf.WriteRune(' ')
-		}
-	}
-	t.display = buf.String()
-
-	return t, nil
-}
-
 // AddTarget to track
 func (m Module) AddTarget(ctx context.Context, link string) (track.Target, error) {
 	_, err := url.Parse(link)
@@ -121,7 +89,9 @@ func (m Module) AddTarget(ctx context.Context, link string) (track.Target, error
 
 	added, err := fetchTargetInformation(ctx, link)
 	if err != nil {
-		return added, fmt.Errorf("showroom.AddTarget: '%s' %s", link, err)
+		// silently fail. CheckStream will get a chance to determine an actual error.
+		// log.Printf("showroom.AddTarget: '%s' %s", link, err)
+		return added, nil
 	}
 
 	return added, nil
