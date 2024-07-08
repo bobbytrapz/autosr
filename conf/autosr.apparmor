@@ -1,0 +1,11 @@
+# /etc/apparmor.d/autosr
+# apparmor_parser -a /etc/apparmor.d/autosr
+
+abi <abi/4.0>,
+include <tunables/global>
+
+profile autosr /usr/local/bin/autosr flags=(unconfined) {
+  userns,
+
+  include if exists <local/chrome>
+}
