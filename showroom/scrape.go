@@ -30,15 +30,23 @@ const (
 func scrapeRoomData(ctx context.Context, link string) (roomStatus, error) {
 	launchBrowserOnce.Do(func() {
 		var l *launcher.Launcher
+		var u string
 		switch runtime.GOOS {
 		case "linux":
-			// workaround: disable sandbox for Ubuntu 24.04
-			l = launcher.New().NoSandbox(true)
-			log.Print("warning: Chrome is running with the --no-sandbox flag.")
+			var err error
+			l = launcher.New()
+			u, err = l.Launch()
+			if err != nil {
+				// try again without the sandbox
+				// workaround: disable sandbox for Ubuntu 24.04
+				l = launcher.New().NoSandbox(true)
+				u = l.MustLaunch()
+				log.Print("warning: Chrome is running with the --no-sandbox flag.")
+			}
 		default:
 			l = launcher.New()
+			u = l.MustLaunch()
 		}
-		u := l.MustLaunch()
 		browser = rod.New().
 			ControlURL(u).
 			MustConnect()
