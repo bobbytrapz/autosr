@@ -131,9 +131,9 @@ func drawLogo(v *gocui.View) {
 	v.Clear()
 
 	if shouldColorLogo {
-		fmt.Fprintf(v, colorLogo)
+		fmt.Fprint(v, colorLogo)
 	} else {
-		fmt.Fprintf(v, logo)
+		fmt.Fprint(v, logo)
 	}
 }
 
