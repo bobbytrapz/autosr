@@ -3,7 +3,7 @@ module github.com/bobbytrapz/autosr
 require (
 	github.com/fsnotify/fsnotify v1.4.7
 	github.com/go-rod/rod v0.113.3
-	github.com/gorilla/websocket v1.4.1
+	github.com/gorilla/websocket v1.5.3
 	github.com/jroimartin/gocui v0.4.0
 	github.com/spf13/cobra v0.0.3
 	github.com/spf13/viper v1.3.1
